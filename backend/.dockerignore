@@ -1,0 +1,19 @@
+# Backend Docker Ignore
+.git
+.gitignore
+.env
+.env.local
+.env.*.local
+*.md
+README*
+LICENSE
+Makefile
+.air.toml
+tmp/
+*.log
+*.test
+*.out
+.idea/
+.vscode/
+*.swp
+*.swo
