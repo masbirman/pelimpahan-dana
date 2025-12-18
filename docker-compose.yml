@@ -1,0 +1,93 @@
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:16-alpine
+    container_name: pelimpahan_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: pelimpahan_db
+      POSTGRES_USER: pelimpahan
+      POSTGRES_PASSWORD: pelimpahan_secret
+      TZ: Asia/Makassar
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - pelimpahan_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U pelimpahan -d pelimpahan_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Adminer - Database Management
+  adminer:
+    image: adminer:latest
+    container_name: pelimpahan_adminer
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      ADMINER_DEFAULT_SERVER: postgres
+    networks:
+      - pelimpahan_network
+    depends_on:
+      - postgres
+
+  # Backend - Gin API
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: pelimpahan_backend
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      APP_ENV: local
+      APP_DEBUG: "true"
+      APP_KEY: base64:your-generated-key-here
+      APP_URL: http://localhost:8000
+      APP_TIMEZONE: Asia/Makassar
+      DB_CONNECTION: postgres
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_DATABASE: pelimpahan_db
+      DB_USERNAME: pelimpahan
+      DB_PASSWORD: pelimpahan_secret
+      JWT_SECRET: your-jwt-secret-key-here
+    volumes:
+      - ./uploads:/app/uploads
+    networks:
+      - pelimpahan_network
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  # Frontend - Vue + Vite
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: pelimpahan_frontend
+    restart: unless-stopped
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    environment:
+      VITE_API_URL: http://localhost:8000/api
+    networks:
+      - pelimpahan_network
+    depends_on:
+      - backend
+
+volumes:
+  postgres_data:
+  go_modules:
+
+networks:
+  pelimpahan_network:
+    driver: bridge
