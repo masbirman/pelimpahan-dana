@@ -1,16 +1,16 @@
 <template>
   <div class="space-y-6 animate-fadeIn">
     <!-- Welcome & Stats Row -->
-    <div class="grid grid-cols-1 lg:grid-cols-5 gap-6">
+    <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
       <!-- Welcome Widget (Left - 3 cols) -->
       <div class="lg:col-span-3 card overflow-hidden bg-white">
         <div class="card-body p-6">
-          <div class="flex gap-6">
+          <div class="grid grid-cols-1 md:grid-cols-[1fr,200px] lg:grid-cols-[1fr,220px] xl:grid-cols-[1fr,260px] gap-6">
             <!-- Left Column: Greeting + Countdown -->
-            <div class="flex-1 space-y-4">
+            <div class="space-y-4 min-w-0">
               <!-- Greeting -->
               <div>
-                <h2 class="text-2xl font-bold text-primary-800">
+                <h2 class="text-2xl font-bold text-primary-800 whitespace-nowrap" style="min-height: 2rem;">
                   <span class="typing-text">{{ displayedGreeting }}</span>
                   <span v-if="!typingComplete" class="typing-cursor">|</span>
                 </h2>
@@ -48,66 +48,66 @@
               </div>
             </div>
             
-            <!-- Right Column: Larger Illustration -->
-            <div class="hidden md:flex items-center justify-center flex-shrink-0">
+            <!-- Right Column: Illustration (Responsive Width) -->
+            <div class="hidden md:flex items-center justify-center">
               <img 
                 src="http://localhost:8000/uploads/ilustrasi-dashboard.webp" 
                 alt="Welcome Illustration" 
-                class="h-48 w-auto object-contain"
+                class="h-48 w-full object-contain"
               />
             </div>
           </div>
         </div>
       </div>
 
-      <!-- Stats Widget (Right - 2 cols) -->
-      <div class="lg:col-span-2 card">
-        <div class="card-header">
-          <h3 class="font-semibold text-secondary-900">Statistik</h3>
+      <!-- Stats Widget (Right - 1 col, more compact) -->
+      <div class="lg:col-span-1 card">
+        <div class="card-header py-3">
+          <h3 class="font-semibold text-secondary-900 text-sm">Statistik</h3>
         </div>
-        <div class="card-body grid grid-cols-2 gap-4">
+        <div class="card-body grid grid-cols-2 gap-2 p-3">
           <!-- Total Pelimpahan -->
-          <div class="p-4 bg-blue-50 rounded-xl text-center">
-            <div class="w-10 h-10 mx-auto mb-2 rounded-lg bg-blue-500 flex items-center justify-center">
-              <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div class="p-3 bg-blue-50 rounded-xl text-center">
+            <div class="w-8 h-8 mx-auto mb-1 rounded-lg bg-blue-500 flex items-center justify-center">
+              <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
               </svg>
             </div>
-            <p class="text-2xl font-bold text-blue-700">{{ stats.total_pelimpahan }}</p>
-            <p class="text-xs text-blue-600 mt-1">Total Pelimpahan</p>
+            <p class="text-xl font-bold text-blue-700">{{ stats.total_pelimpahan }}</p>
+            <p class="text-[10px] text-blue-600 mt-0.5">Total Pelimpahan</p>
           </div>
 
           <!-- Unit Kerja -->
-          <div class="p-4 bg-emerald-50 rounded-xl text-center">
-            <div class="w-10 h-10 mx-auto mb-2 rounded-lg bg-emerald-500 flex items-center justify-center">
-              <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div class="p-3 bg-emerald-50 rounded-xl text-center">
+            <div class="w-8 h-8 mx-auto mb-1 rounded-lg bg-emerald-500 flex items-center justify-center">
+              <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
               </svg>
             </div>
-            <p class="text-2xl font-bold text-emerald-700">{{ stats.total_unit }}</p>
-            <p class="text-xs text-emerald-600 mt-1">Unit Kerja</p>
+            <p class="text-xl font-bold text-emerald-700">{{ stats.total_unit }}</p>
+            <p class="text-[10px] text-emerald-600 mt-0.5">Unit Kerja</p>
           </div>
 
           <!-- Jenis Pelimpahan -->
-          <div class="p-4 bg-amber-50 rounded-xl text-center">
-            <div class="w-10 h-10 mx-auto mb-2 rounded-lg bg-amber-500 flex items-center justify-center">
-              <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div class="p-3 bg-amber-50 rounded-xl text-center">
+            <div class="w-8 h-8 mx-auto mb-1 rounded-lg bg-amber-500 flex items-center justify-center">
+              <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
               </svg>
             </div>
-            <p class="text-2xl font-bold text-amber-700">{{ stats.total_jenis }}</p>
-            <p class="text-xs text-amber-600 mt-1">Jenis Pelimpahan</p>
+            <p class="text-xl font-bold text-amber-700">{{ stats.total_jenis }}</p>
+            <p class="text-[10px] text-amber-600 mt-0.5">Jenis Pelimpahan</p>
           </div>
 
           <!-- Total User -->
-          <div class="p-4 bg-purple-50 rounded-xl text-center">
-            <div class="w-10 h-10 mx-auto mb-2 rounded-lg bg-purple-500 flex items-center justify-center">
-              <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div class="p-3 bg-purple-50 rounded-xl text-center">
+            <div class="w-8 h-8 mx-auto mb-1 rounded-lg bg-purple-500 flex items-center justify-center">
+              <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
               </svg>
             </div>
-            <p class="text-2xl font-bold text-purple-700">{{ stats.total_user }}</p>
-            <p class="text-xs text-purple-600 mt-1">Total User</p>
+            <p class="text-xl font-bold text-purple-700">{{ stats.total_user }}</p>
+            <p class="text-[10px] text-purple-600 mt-0.5">Total User</p>
           </div>
         </div>
       </div>
