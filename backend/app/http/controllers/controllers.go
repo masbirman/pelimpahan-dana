@@ -202,22 +202,8 @@ func UploadAvatar(c *gin.Context) {
 		return
 	}
 
-	// Build base URL from request headers (behind reverse proxy)
-	scheme := "https" // Default to HTTPS in production
-	if proto := c.GetHeader("X-Forwarded-Proto"); proto != "" {
-		scheme = proto
-	}
-	// Check X-Forwarded-Host first (set by nginx/traefik), then Host
-	host := c.GetHeader("X-Forwarded-Host")
-	if host == "" {
-		host = c.GetHeader("Host")
-	}
-	if host == "" || host == "backend:8000" || strings.HasPrefix(host, "localhost") {
-		host = "pelimpahan.keudisdiksulteng.web.id"
-	}
-	baseURL := scheme + "://" + host
-
-	user.Avatar = baseURL + "/uploads/" + filename
+	// Store URL path (not file path)
+	user.Avatar = "http://localhost:8000/uploads/" + filename
 	DB.Save(&user)
 
 	c.JSON(http.StatusOK, gin.H{
@@ -416,22 +402,7 @@ func UploadLogo(c *gin.Context) {
 		return
 	}
 
-	// Build base URL from request headers (behind reverse proxy)
-	scheme := "https" // Default to HTTPS in production
-	if proto := c.GetHeader("X-Forwarded-Proto"); proto != "" {
-		scheme = proto
-	}
-	// Check X-Forwarded-Host first (set by nginx/traefik), then Host
-	host := c.GetHeader("X-Forwarded-Host")
-	if host == "" {
-		host = c.GetHeader("Host")
-	}
-	if host == "" || host == "backend:8000" || strings.HasPrefix(host, "localhost") {
-		host = "pelimpahan.keudisdiksulteng.web.id"
-	}
-	baseURL := scheme + "://" + host
-
-	logoUrl := baseURL + "/uploads/" + filename
+	logoUrl := "http://localhost:8000/uploads/" + filename
 
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
