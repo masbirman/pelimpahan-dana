@@ -1,96 +1,232 @@
-# Pelimpahan Dana UP/GU
+# Sistem Pelimpahan Dana
 
-Sistem manajemen pelimpahan dana UP/GU dengan fitur multi-role, input pelimpahan dengan multiple recipients, dan laporan.
+Aplikasi manajemen pelimpahan dana dengan fitur lengkap untuk tracking saldo bendahara, top-up, penarikan tunai, dan pelimpahan ke unit kerja.
 
-## Tech Stack
+## 🚀 Features
 
-- **Backend**: Goravel (Go)
-- **Frontend**: Vue 3 + Vite + Tailwind CSS
-- **Database**: PostgreSQL 16
-- **Container**: Docker
+### Core Features
+- ✅ **Manajemen User** - Super Admin, Bendahara, Operator
+- ✅ **Unit Kerja** - CRUD unit penerima dana
+- ✅ **Jenis Pelimpahan** - Kategorisasi jenis pelimpahan
+- ✅ **Input Pelimpahan** - Form pelimpahan dengan multiple penerima
+- ✅ **Sumber Dana** - Per-recipient source selection (Bank/Tunai)
+- ✅ **Export Excel** - Export data pelimpahan ke Excel
 
-## Quick Start
+### Saldo Management
+- ✅ **Saldo Bendahara** - Track initial balance (Bank & Tunai)
+- ✅ **Top Up Bank** - Record external fund receipts
+- ✅ **Penarikan Tunai** - Internal transfer Bank → Tunai
+- ✅ **Real-time Balance** - Automatic calculation with audit trail
+
+### Reporting
+- ✅ **List Pelimpahan** - View with running balance
+- ✅ **Detail Report** - Print-ready pelimpahan report
+- ✅ **Balance Tracking** - Real-time saldo calculation
+
+## 🛠️ Tech Stack
+
+### Backend
+- **Framework:** Go (Gin)
+- **Database:** PostgreSQL 16
+- **ORM:** GORM
+- **Auth:** JWT
+
+### Frontend
+- **Framework:** Vue 3 (Composition API)
+- **Build Tool:** Vite
+- **State Management:** Pinia
+- **Styling:** Tailwind CSS
+- **HTTP Client:** Axios
+
+### DevOps
+- **Containerization:** Docker & Docker Compose
+- **Database Admin:** Adminer
+
+## 📦 Installation
 
 ### Prerequisites
-- Docker Desktop
+- Docker & Docker Compose
+- Git
 
-### Running the Application
+### Quick Start
 
-1. Clone repository dan masuk ke folder project
+1. **Clone repository:**
+```bash
+git clone https://github.com/masbirman/pelimpahan-dana.git
+cd pelimpahan-dana
+```
 
-2. Start semua services:
-   ```bash
-   docker-compose up -d
-   ```
+2. **Start services:**
+```bash
+docker-compose up -d
+```
 
-3. Akses aplikasi:
-   - **Frontend**: http://localhost:5173
-   - **Backend API**: http://localhost:8000
-   - **Adminer (DB)**: http://localhost:8080
+3. **Access applications:**
+- Frontend: http://localhost:5173
+- Backend API: http://localhost:8000
+- Adminer: http://localhost:8080
 
-4. Run database migrations:
-   ```bash
-   # Masuk ke container backend
-   docker exec -it pelimpahan_backend sh
-   
-   # Jalankan migration
-   psql -h postgres -U pelimpahan -d pelimpahan_db -f database/migrations/001_create_tables.sql
-   psql -h postgres -U pelimpahan -d pelimpahan_db -f database/seeders/seed.sql
-   ```
+### Default Credentials
+- **Email:** admin@pelimpahan.com
+- **Password:** admin123
 
-## Demo Accounts
+## 📁 Project Structure
 
-| Role | Email | Password |
-|------|-------|----------|
-| Super Admin | admin@pelimpahan.local | password |
-| Bendahara | bendahara@pelimpahan.local | password |
-| Operator | operator@pelimpahan.local | password |
+```
+pelimpahan-dana/
+├── backend/              # Go (Gin) API
+│   ├── app/
+│   │   ├── http/
+│   │   │   └── controllers/
+│   │   └── models/
+│   ├── middleware/
+│   └── main.go
+├── frontend/            # Vue 3 + Vite
+│   ├── src/
+│   │   ├── components/
+│   │   ├── views/
+│   │   ├── stores/
+│   │   └── services/
+│   └── package.json
+├── database/            # Database backups
+├── uploads/             # File uploads
+└── docker-compose.yml
+```
 
-## Features
+## 🗄️ Database Schema
 
-- ✅ Multi-role authentication (Super Admin, Bendahara, Operator)
-- ✅ User avatar & status keaktifan
-- ✅ CRUD Unit Kerja
-- ✅ CRUD Jenis Pelimpahan
-- ✅ Input Pelimpahan dengan multiple recipients
-- ✅ Auto numbering pelimpahan per jenis
-- ✅ Timezone Asia/Makassar
-- ✅ Laporan per pelimpahan
-- ✅ Export Excel (coming soon)
-- ✅ Import Excel (coming soon)
+### Main Tables
+- `users` - User accounts with roles
+- `units` - Unit kerja (work units)
+- `jenis_pelimpahan` - Transfer types
+- `pelimpahan` - Main transfer records
+- `pelimpahan_details` - Transfer recipients
+- `saldo_bendahara` - Initial balance records
+- `top_up_saldo` - Bank top-up transactions
+- `penarikan_tunai` - Cash withdrawal transactions
 
-## API Endpoints
+## 💰 Balance Calculation Logic
+
+```
+Saldo Bank = Saldo Awal Bank
+           + SUM(top_up_saldo.jumlah)
+           - SUM(penarikan_tunai.jumlah)
+           - SUM(pelimpahan_detail.jumlah WHERE sumber_dana='bank')
+
+Saldo Tunai = Saldo Awal Tunai
+            + SUM(penarikan_tunai.jumlah)
+            - SUM(pelimpahan_detail.jumlah WHERE sumber_dana='tunai')
+```
+
+## 🔐 User Roles
+
+### Super Admin
+- Full system access
+- User management
+- Delete operations
+- System settings
+
+### Bendahara
+- Saldo management
+- Top-up & withdrawal
+- View all pelimpahan
+- Cannot delete
+
+### Operator
+- Input pelimpahan
+- View own pelimpahan
+- Export reports
+
+## 📊 API Endpoints
 
 ### Authentication
-- `POST /api/login` - Login
-- `POST /api/logout` - Logout
+- `POST /api/login` - User login
+- `POST /api/logout` - User logout
 - `GET /api/me` - Get current user
 
-### Units
-- `GET /api/units` - List units
-- `POST /api/units` - Create unit
-- `GET /api/units/:id` - Get unit
-- `PUT /api/units/:id` - Update unit
-- `DELETE /api/units/:id` - Delete unit
-
-### Jenis Pelimpahan
-- `GET /api/jenis-pelimpahan` - List jenis
-- `POST /api/jenis-pelimpahan` - Create jenis
-- `GET /api/jenis-pelimpahan/:id` - Get jenis
-- `PUT /api/jenis-pelimpahan/:id` - Update jenis
-- `DELETE /api/jenis-pelimpahan/:id` - Delete jenis
-
 ### Pelimpahan
-- `GET /api/pelimpahan` - List pelimpahan
-- `POST /api/pelimpahan` - Create pelimpahan
-- `GET /api/pelimpahan/:id` - Get pelimpahan
-- `PUT /api/pelimpahan/:id` - Update pelimpahan
-- `DELETE /api/pelimpahan/:id` - Delete pelimpahan
-- `GET /api/pelimpahan/:id/report` - Get report
+- `GET /api/pelimpahan` - List all
+- `POST /api/pelimpahan` - Create new
+- `GET /api/pelimpahan/:id` - Get detail
+- `PUT /api/pelimpahan/:id` - Update
+- `DELETE /api/pelimpahan/:id` - Delete
 
-### Users (Super Admin only)
-- `GET /api/users` - List users
-- `POST /api/users` - Create user
-- `GET /api/users/:id` - Get user
-- `PUT /api/users/:id` - Update user
-- `DELETE /api/users/:id` - Delete user
+### Saldo Management
+- `GET /api/saldo-bendahara/latest` - Get real-time balance
+- `POST /api/top-up-saldo` - Create top-up
+- `POST /api/penarikan-tunai` - Create withdrawal
+
+## 🔧 Configuration
+
+### Backend (.env)
+```env
+DB_HOST=postgres
+DB_PORT=5432
+DB_DATABASE=pelimpahan_db
+DB_USERNAME=pelimpahan
+DB_PASSWORD=pelimpahan_secret
+JWT_SECRET=your-jwt-secret-key
+```
+
+### Frontend (.env)
+```env
+VITE_API_URL=http://localhost:8000/api
+```
+
+## 🚢 Deployment
+
+### Production Build
+
+**Backend:**
+```bash
+cd backend
+go build -o pelimpahan-api
+```
+
+**Frontend:**
+```bash
+cd frontend
+npm run build
+```
+
+## 📝 Database Backup & Restore
+
+### Backup
+```bash
+docker exec pelimpahan_db pg_dump -U pelimpahan pelimpahan_db > backup.sql
+```
+
+### Restore
+```bash
+docker exec -i pelimpahan_db psql -U pelimpahan pelimpahan_db < backup.sql
+```
+
+## 🐛 Troubleshooting
+
+### Frontend shows login after refresh
+- Check browser console for errors
+- Verify JWT token in localStorage
+- Check `/api/me` endpoint response
+
+### Database connection failed
+- Ensure PostgreSQL container is running
+- Check database credentials in docker-compose.yml
+- Verify network connectivity
+
+## 📄 License
+
+This project is proprietary software.
+
+## 👥 Contributors
+
+- **Developer:** Antigravity AI Assistant
+- **Project Owner:** Anto
+
+## 📞 Support
+
+For issues and questions, please create an issue on GitHub.
+
+---
+
+**Version:** 1.0.0  
+**Last Updated:** December 18, 2025
