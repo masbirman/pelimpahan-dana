@@ -3,9 +3,9 @@
 # Pelimpahan Dana - Full Stack
 # ============================================
 # 
-# Domain Configuration (set in Dokploy UI):
-# - Frontend: pelimpahan.keudisdiksulteng.web.id
-# - Backend API: api-pelimpahan.keudisdiksulteng.web.id
+# Single Domain: pelimpahan.keudisdiksulteng.web.id
+# - Frontend: /
+# - Backend API: /api
 # ============================================
 
 services:
@@ -60,12 +60,19 @@ services:
     depends_on:
       database:
         condition: service_healthy
-    healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8000/api/branding"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 30s
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.pelimpahan-backend.rule=Host(`pelimpahan.keudisdiksulteng.web.id`) && PathPrefix(`/api`)"
+      - "traefik.http.routers.pelimpahan-backend.entrypoints=websecure"
+      - "traefik.http.routers.pelimpahan-backend.tls.certresolver=letsencrypt"
+      - "traefik.http.services.pelimpahan-backend.loadbalancer.server.port=8000"
+      - "traefik.http.routers.pelimpahan-backend.priority=100"
+      # Also handle /uploads path for static files
+      - "traefik.http.routers.pelimpahan-uploads.rule=Host(`pelimpahan.keudisdiksulteng.web.id`) && PathPrefix(`/uploads`)"
+      - "traefik.http.routers.pelimpahan-uploads.entrypoints=websecure"
+      - "traefik.http.routers.pelimpahan-uploads.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.pelimpahan-uploads.service=pelimpahan-backend"
+      - "traefik.http.routers.pelimpahan-uploads.priority=99"
 
   # ==========================================
   # FRONTEND - Vue + Nginx
@@ -75,19 +82,20 @@ services:
       context: ./frontend
       dockerfile: Dockerfile.prod
       args:
-        VITE_API_URL: https://api-pelimpahan.keudisdiksulteng.web.id/api
+        VITE_API_URL: https://pelimpahan.keudisdiksulteng.web.id/api
     container_name: pelimpahan-frontend
     restart: unless-stopped
     networks:
       - pelimpahan-network
-    healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:80/"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 10s
     depends_on:
       - backend
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.pelimpahan-frontend.rule=Host(`pelimpahan.keudisdiksulteng.web.id`)"
+      - "traefik.http.routers.pelimpahan-frontend.entrypoints=websecure"
+      - "traefik.http.routers.pelimpahan-frontend.tls.certresolver=letsencrypt"
+      - "traefik.http.services.pelimpahan-frontend.loadbalancer.server.port=80"
+      - "traefik.http.routers.pelimpahan-frontend.priority=1"
 
 volumes:
   pelimpahan_db_data:
