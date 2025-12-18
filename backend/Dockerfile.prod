@@ -10,14 +10,11 @@ RUN apk add --no-cache git make gcc musl-dev tzdata
 # Set working directory
 WORKDIR /build
 
-# Copy go mod file
-COPY go.mod ./
-
-# Generate go.sum and download dependencies
-RUN go mod tidy && go mod download
-
-# Copy source code
+# Copy all source files first
 COPY . .
+
+# Generate go.sum from source imports and download dependencies
+RUN go mod tidy && go mod download
 
 # Build the application with optimizations
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build \
