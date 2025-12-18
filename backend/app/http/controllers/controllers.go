@@ -202,8 +202,18 @@ func UploadAvatar(c *gin.Context) {
 		return
 	}
 
-	// Store URL path (not file path)
-	user.Avatar = "http://localhost:8000/uploads/" + filename
+	// Build base URL from request
+	scheme := "http"
+	if proto := c.GetHeader("X-Forwarded-Proto"); proto != "" {
+		scheme = proto
+	}
+	host := c.GetHeader("Host")
+	if host == "" {
+		host = "localhost:8000"
+	}
+	baseURL := scheme + "://" + host
+
+	user.Avatar = baseURL + "/uploads/" + filename
 	DB.Save(&user)
 
 	c.JSON(http.StatusOK, gin.H{
@@ -402,7 +412,18 @@ func UploadLogo(c *gin.Context) {
 		return
 	}
 
-	logoUrl := "http://localhost:8000/uploads/" + filename
+	// Build base URL from request
+	scheme := "http"
+	if proto := c.GetHeader("X-Forwarded-Proto"); proto != "" {
+		scheme = proto
+	}
+	host := c.GetHeader("Host")
+	if host == "" {
+		host = "localhost:8000"
+	}
+	baseURL := scheme + "://" + host
+
+	logoUrl := baseURL + "/uploads/" + filename
 
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
