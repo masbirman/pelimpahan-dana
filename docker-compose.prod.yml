@@ -1,17 +1,36 @@
 # ============================================
 # DOKPLOY PRODUCTION DOCKER COMPOSE
-# Pelimpahan Dana
+# Pelimpahan Dana - Full Stack
 # ============================================
 # 
-# IMPORTANT: Database sudah dibuat di Dokploy secara terpisah
-# Service ini hanya untuk Backend dan Frontend
-#
 # Domain Configuration:
 # - Frontend: pelimpahan.keudisdiksulteng.web.id
 # - Backend API: api-pelimpahan.keudisdiksulteng.web.id
 # ============================================
 
 services:
+  # ==========================================
+  # DATABASE - PostgreSQL
+  # ==========================================
+  database:
+    image: postgres:16-alpine
+    container_name: pelimpahan-database
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: pelimpahan_dana_db
+      POSTGRES_USER: pelimpahan_user
+      POSTGRES_PASSWORD: Fr3aks@16121899
+    volumes:
+      - pelimpahan_db_data:/var/lib/postgresql/data
+    networks:
+      - pelimpahan-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U pelimpahan_user -d pelimpahan_dana_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
   # ==========================================
   # BACKEND - Go Gin API
   # ==========================================
@@ -27,17 +46,21 @@ services:
       APP_PORT: "8000"
       APP_TIMEZONE: Asia/Makassar
       DB_CONNECTION: postgres
-      DB_HOST: pelimpahan-dana-database-hlogww
+      DB_HOST: database
       DB_PORT: "5432"
       DB_DATABASE: pelimpahan_dana_db
       DB_USERNAME: pelimpahan_user
-      DB_PASSWORD: ${DB_PASSWORD:-Fr3aks@16121899}
+      DB_PASSWORD: Fr3aks@16121899
       JWT_SECRET: gWTRcTnP8AxdrvkKgODiSR379plrMdAVQz1/XmRkPjs=
       CORS_ALLOWED_ORIGINS: https://pelimpahan.keudisdiksulteng.web.id
     volumes:
       - pelimpahan_uploads:/app/uploads
     networks:
+      - pelimpahan-network
       - dokploy-network
+    depends_on:
+      database:
+        condition: service_healthy
     labels:
       # Traefik Configuration
       - "traefik.enable=true"
@@ -68,7 +91,7 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 10s
+      start_period: 30s
 
   # ==========================================
   # FRONTEND - Vue + Nginx
@@ -110,9 +133,13 @@ services:
       - backend
 
 volumes:
+  pelimpahan_db_data:
+    driver: local
   pelimpahan_uploads:
     driver: local
 
 networks:
+  pelimpahan-network:
+    driver: bridge
   dokploy-network:
     external: true
