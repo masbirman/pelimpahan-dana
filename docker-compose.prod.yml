@@ -42,7 +42,7 @@ services:
     container_name: pelimpahan-backend
     restart: unless-stopped
     ports:
-      - "8001:8000"
+      - "8002:8000"
     environment:
       APP_ENV: production
       APP_DEBUG: "false"
@@ -82,7 +82,7 @@ services:
     container_name: pelimpahan-frontend
     restart: unless-stopped
     ports:
-      - "3001:80"
+      - "3003:80"
     networks:
       - dokploy-network
     depends_on:
