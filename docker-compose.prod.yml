@@ -24,7 +24,7 @@ services:
     volumes:
       - pelimpahan_db_data:/var/lib/postgresql/data
     networks:
-      - pelimpahan-network
+      - dokploy-network
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U pelimpahan_user -d pelimpahan_dana_db"]
       interval: 10s
@@ -57,7 +57,7 @@ services:
     volumes:
       - pelimpahan_uploads:/app/uploads
     networks:
-      - pelimpahan-network
+      - dokploy-network
     depends_on:
       database:
         condition: service_healthy
@@ -80,7 +80,7 @@ services:
     container_name: pelimpahan-frontend
     restart: unless-stopped
     networks:
-      - pelimpahan-network
+      - dokploy-network
     depends_on:
       - backend
     healthcheck:
@@ -97,5 +97,5 @@ volumes:
     driver: local
 
 networks:
-  pelimpahan-network:
-    driver: bridge
+  dokploy-network:
+    external: true
