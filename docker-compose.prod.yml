@@ -3,7 +3,7 @@
 # Pelimpahan Dana - Full Stack
 # ============================================
 # 
-# Domain Configuration:
+# Domain Configuration (set in Dokploy UI):
 # - Frontend: pelimpahan.keudisdiksulteng.web.id
 # - Backend API: api-pelimpahan.keudisdiksulteng.web.id
 # ============================================
@@ -57,35 +57,11 @@ services:
       - pelimpahan_uploads:/app/uploads
     networks:
       - pelimpahan-network
-      - dokploy-network
+    ports:
+      - "8000:8000"
     depends_on:
       database:
         condition: service_healthy
-    labels:
-      # Traefik Configuration
-      - "traefik.enable=true"
-      
-      # HTTP Router
-      - "traefik.http.routers.pelimpahan-backend.rule=Host(`api-pelimpahan.keudisdiksulteng.web.id`)"
-      - "traefik.http.routers.pelimpahan-backend.entrypoints=web"
-      - "traefik.http.routers.pelimpahan-backend.middlewares=redirect-to-https@docker"
-      
-      # HTTPS Router
-      - "traefik.http.routers.pelimpahan-backend-secure.rule=Host(`api-pelimpahan.keudisdiksulteng.web.id`)"
-      - "traefik.http.routers.pelimpahan-backend-secure.entrypoints=websecure"
-      - "traefik.http.routers.pelimpahan-backend-secure.tls=true"
-      - "traefik.http.routers.pelimpahan-backend-secure.tls.certresolver=letsencrypt"
-      
-      # Service
-      - "traefik.http.services.pelimpahan-backend.loadbalancer.server.port=8000"
-      
-      # CORS Headers Middleware
-      - "traefik.http.middlewares.pelimpahan-cors.headers.accesscontrolallowmethods=GET,OPTIONS,PUT,POST,DELETE,PATCH"
-      - "traefik.http.middlewares.pelimpahan-cors.headers.accesscontrolallowheaders=*"
-      - "traefik.http.middlewares.pelimpahan-cors.headers.accesscontrolalloworiginlist=https://pelimpahan.keudisdiksulteng.web.id"
-      - "traefik.http.middlewares.pelimpahan-cors.headers.accesscontrolmaxage=100"
-      - "traefik.http.middlewares.pelimpahan-cors.headers.addvaryheader=true"
-      - "traefik.http.routers.pelimpahan-backend-secure.middlewares=pelimpahan-cors"
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8000/api/branding"]
       interval: 30s
@@ -105,24 +81,9 @@ services:
     container_name: pelimpahan-frontend
     restart: unless-stopped
     networks:
-      - dokploy-network
-    labels:
-      # Traefik Configuration
-      - "traefik.enable=true"
-      
-      # HTTP Router
-      - "traefik.http.routers.pelimpahan-frontend.rule=Host(`pelimpahan.keudisdiksulteng.web.id`)"
-      - "traefik.http.routers.pelimpahan-frontend.entrypoints=web"
-      - "traefik.http.routers.pelimpahan-frontend.middlewares=redirect-to-https@docker"
-      
-      # HTTPS Router
-      - "traefik.http.routers.pelimpahan-frontend-secure.rule=Host(`pelimpahan.keudisdiksulteng.web.id`)"
-      - "traefik.http.routers.pelimpahan-frontend-secure.entrypoints=websecure"
-      - "traefik.http.routers.pelimpahan-frontend-secure.tls=true"
-      - "traefik.http.routers.pelimpahan-frontend-secure.tls.certresolver=letsencrypt"
-      
-      # Service
-      - "traefik.http.services.pelimpahan-frontend.loadbalancer.server.port=80"
+      - pelimpahan-network
+    ports:
+      - "80:80"
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:80/"]
       interval: 30s
@@ -141,5 +102,3 @@ volumes:
 networks:
   pelimpahan-network:
     driver: bridge
-  dokploy-network:
-    external: true
