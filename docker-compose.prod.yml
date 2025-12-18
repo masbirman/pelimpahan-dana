@@ -5,9 +5,8 @@
 # 
 # Configure domains in Dokploy UI:
 # - frontend: pelimpahan.keudisdiksulteng.web.id (path: /, port: 80)
-# - backend:  pelimpahan.keudisdiksulteng.web.id (path: /api, port: 8000)
-# - backend:  pelimpahan.keudisdiksulteng.web.id (path: /uploads, port: 8000)
 # ============================================
+version: '3.8'
 
 services:
   # ==========================================
