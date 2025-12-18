@@ -5,7 +5,7 @@
 - **Backend API**: `api-pelimpahan.keudisdiksulteng.web.id`
 
 ## Database (Sudah Tersedia di Dokploy)
-- **Host**: `pelimpahan-dana-database-hlogww`
+- **Host**: `pelimpahan-dana-database-hlpgww`
 - **Port**: `5432`
 - **Database**: `pelimpahan_dana_db`
 - **User**: `pelimpahan_user`
@@ -58,7 +58,7 @@
    APP_PORT=8000
    APP_TIMEZONE=Asia/Makassar
    DB_CONNECTION=postgres
-   DB_HOST=pelimpahan-dana-database-hlogww
+   DB_HOST=pelimpahan-dana-database-hlpgww
    DB_PORT=5432
    DB_DATABASE=pelimpahan_dana_db
    DB_USERNAME=pelimpahan_user
@@ -92,8 +92,9 @@
 - [ ] Verify frontend accessible at https://pelimpahan.keudisdiksulteng.web.id
 - [ ] Verify backend API at https://api-pelimpahan.keudisdiksulteng.web.id/api/branding
 - [ ] Test login dengan credentials:
-  - Email: `admin@pelimpahan.local`
-  - Password: `password`
+  - Email: `admin@pelimpahan.local` / Password: `password` (Super Admin)
+  - Email: `bendahara@pelimpahan.local` / Password: `passworduntu` (Bendahara)
+  - Email: `operator@pelimpahan.local` / Password: `password` (Operator)
 - [ ] Test CRUD operations
 - [ ] Check database connection
 
@@ -115,6 +116,71 @@ Check container logs di Dokploy untuk error details.
 
 ---
 
+## 🗄️ Import Database dari Local
+
+Setelah deploy selesai, import data dari database lokal:
+
+### File yang Disiapkan:
+- `backup_production.sql` - Database backup dengan URL production
+
+### Langkah Import:
+
+1. **SSH ke server Dokploy** atau gunakan Dokploy Terminal
+
+2. **Kosongkan database existing (jika perlu):**
+   ```bash
+   docker exec -it pelimpahan-dana-database-hlpgww psql -U pelimpahan_user -d pelimpahan_dana_db
+   ```
+   ```sql
+   DROP SCHEMA public CASCADE;
+   CREATE SCHEMA public;
+   GRANT ALL ON SCHEMA public TO pelimpahan_user;
+   \q
+   ```
+
+3. **Import backup:**
+   ```bash
+   # Upload file backup_production.sql ke server terlebih dahulu
+   docker exec -i pelimpahan-dana-database-hlpgww psql -U pelimpahan_user -d pelimpahan_dana_db < backup_production.sql
+   ```
+
+4. **Verifikasi:**
+   ```bash
+   docker exec -it pelimpahan-dana-database-hlpgww psql -U pelimpahan_user -d pelimpahan_dana_db -c "SELECT * FROM users;"
+   ```
+
+📖 Lihat `IMPORT_DATABASE.md` untuk panduan lengkap.
+
+---
+
+## 📁 Persistent Storage (Uploads)
+
+### Volume Configuration (sudah ada di docker-compose.prod.yml):
+```yaml
+volumes:
+  - pelimpahan_uploads:/app/uploads
+```
+
+### Upload File ke Production:
+
+1. **Via Docker CP:**
+   ```bash
+   # Copy file dari local ke container
+   docker cp ./uploads/. pelimpahan-backend:/app/uploads/
+   ```
+
+2. **Via Aplikasi:**
+   - Login sebagai admin
+   - Upload ulang logo di Settings → Branding
+   - Upload ulang avatar di Profile
+
+### File yang perlu diupload:
+- `logo_20251218225558.png` - Logo aplikasi
+- `avatar_20251218225545_admin_pelimpahan.local.png` - Avatar admin
+- `ilustrasi-dashboard.webp` - Ilustrasi dashboard
+
+---
+
 ## File Structure
 ```
 pelimpahan-dana/
@@ -127,5 +193,7 @@ pelimpahan-dana/
 │   ├── nginx.conf          # Nginx configuration
 │   ├── .dockerignore       # Docker ignore
 │   └── .env.production     # Production env template
+├── backup_production.sql   # Database backup for production
+├── IMPORT_DATABASE.md      # Detailed import guide
 └── docker-compose.prod.yml # Dokploy compose file
 ```
