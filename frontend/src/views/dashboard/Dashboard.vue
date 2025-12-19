@@ -51,7 +51,7 @@
             <!-- Right Column: Illustration (Responsive Width) -->
             <div class="hidden md:flex items-center justify-center">
               <img 
-                src="http://localhost:8000/uploads/ilustrasi-dashboard.webp" 
+                :src="apiBaseUrl + '/uploads/ilustrasi-dashboard.webp'" 
                 alt="Welcome Illustration" 
                 class="h-48 w-full object-contain"
               />
@@ -60,102 +60,141 @@
         </div>
       </div>
 
-      <!-- Stats Widget (Right - 1 col, more compact) -->
-      <div class="lg:col-span-1 card">
-        <div class="card-header py-3">
+      <!-- Stats Widget (Right - 1 col) -->
+      <div class="lg:col-span-1 card flex flex-col">
+        <div class="card-header py-2">
           <h3 class="font-semibold text-secondary-900 text-sm">Statistik</h3>
         </div>
-        <div class="card-body grid grid-cols-2 gap-2 p-3">
-          <!-- Total Pelimpahan -->
-          <div class="p-3 bg-blue-50 rounded-xl text-center">
-            <div class="w-8 h-8 mx-auto mb-1 rounded-lg bg-blue-500 flex items-center justify-center">
-              <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
-              </svg>
+        <div class="card-body p-2 flex-1 flex flex-col">
+          <!-- Stats Grid -->
+          <div class="grid grid-cols-2 gap-2 flex-1">
+            <!-- Total Pelimpahan -->
+            <div class="p-3 bg-blue-50 rounded-xl text-center flex flex-col justify-center">
+              <div class="w-8 h-8 mx-auto mb-1 rounded-lg bg-blue-500 flex items-center justify-center">
+                <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
+                </svg>
+              </div>
+              <p class="text-xl font-bold text-blue-700">{{ stats.total_pelimpahan }}</p>
+              <p class="text-[10px] text-blue-600">Total Pelimpahan</p>
             </div>
-            <p class="text-xl font-bold text-blue-700">{{ stats.total_pelimpahan }}</p>
-            <p class="text-[10px] text-blue-600 mt-0.5">Total Pelimpahan</p>
-          </div>
 
-          <!-- Unit Kerja -->
-          <div class="p-3 bg-emerald-50 rounded-xl text-center">
-            <div class="w-8 h-8 mx-auto mb-1 rounded-lg bg-emerald-500 flex items-center justify-center">
-              <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-              </svg>
+            <!-- Unit Kerja -->
+            <div class="p-3 bg-emerald-50 rounded-xl text-center flex flex-col justify-center">
+              <div class="w-8 h-8 mx-auto mb-1 rounded-lg bg-emerald-500 flex items-center justify-center">
+                <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                </svg>
+              </div>
+              <p class="text-xl font-bold text-emerald-700">{{ stats.total_unit }}</p>
+              <p class="text-[10px] text-emerald-600">Unit Kerja</p>
             </div>
-            <p class="text-xl font-bold text-emerald-700">{{ stats.total_unit }}</p>
-            <p class="text-[10px] text-emerald-600 mt-0.5">Unit Kerja</p>
-          </div>
 
-          <!-- Jenis Pelimpahan -->
-          <div class="p-3 bg-amber-50 rounded-xl text-center">
-            <div class="w-8 h-8 mx-auto mb-1 rounded-lg bg-amber-500 flex items-center justify-center">
-              <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
-              </svg>
+            <!-- Jenis Pelimpahan -->
+            <div class="p-3 bg-amber-50 rounded-xl text-center flex flex-col justify-center">
+              <div class="w-8 h-8 mx-auto mb-1 rounded-lg bg-amber-500 flex items-center justify-center">
+                <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+                </svg>
+              </div>
+              <p class="text-xl font-bold text-amber-700">{{ stats.total_jenis }}</p>
+              <p class="text-[10px] text-amber-600">Jenis Pelimpahan</p>
             </div>
-            <p class="text-xl font-bold text-amber-700">{{ stats.total_jenis }}</p>
-            <p class="text-[10px] text-amber-600 mt-0.5">Jenis Pelimpahan</p>
-          </div>
 
-          <!-- Total User -->
-          <div class="p-3 bg-purple-50 rounded-xl text-center">
-            <div class="w-8 h-8 mx-auto mb-1 rounded-lg bg-purple-500 flex items-center justify-center">
-              <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-              </svg>
+            <!-- Total User -->
+            <div class="p-3 bg-purple-50 rounded-xl text-center flex flex-col justify-center">
+              <div class="w-8 h-8 mx-auto mb-1 rounded-lg bg-purple-500 flex items-center justify-center">
+                <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                </svg>
+              </div>
+              <p class="text-xl font-bold text-purple-700">{{ stats.total_user }}</p>
+              <p class="text-[10px] text-purple-600">Total User</p>
             </div>
-            <p class="text-xl font-bold text-purple-700">{{ stats.total_user }}</p>
-            <p class="text-[10px] text-purple-600 mt-0.5">Total User</p>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- Quick Actions & Recent -->
+    <!-- Saldo & Recent -->
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-      <!-- Quick Actions -->
+      <!-- Saldo Bendahara -->
       <div class="card">
-        <div class="card-header">
-          <h3 class="font-semibold text-secondary-900">Aksi Cepat</h3>
+        <div class="card-header flex items-center justify-between">
+          <h3 class="font-semibold text-secondary-900">Saldo Bendahara</h3>
+          <router-link to="/saldo-bendahara" class="text-xs text-primary-600 hover:text-primary-700">
+            Detail →
+          </router-link>
         </div>
-        <div class="card-body grid grid-cols-2 gap-4">
-          <router-link to="/pelimpahan/create" class="p-4 bg-primary-50 rounded-xl hover:bg-primary-100 transition-colors text-center group">
-            <div class="w-12 h-12 mx-auto mb-2 rounded-xl bg-primary-100 group-hover:bg-primary-200 flex items-center justify-center transition-colors">
-              <svg class="w-6 h-6 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-              </svg>
+        <div class="card-body space-y-4">
+          <!-- Total Saldo -->
+          <div class="p-4 bg-gradient-to-br from-primary-500 to-primary-700 rounded-xl text-white">
+            <div class="flex items-center gap-3">
+              <div class="w-12 h-12 rounded-xl bg-white/20 flex items-center justify-center">
+                <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <div>
+                <p class="text-xs text-white/80">Total Saldo</p>
+                <p class="text-xl font-bold">{{ formatCurrency(saldo.total) }}</p>
+              </div>
             </div>
-            <p class="text-sm font-medium text-primary-700">Input Pelimpahan</p>
-          </router-link>
+          </div>
 
-          <router-link to="/pelimpahan" class="p-4 bg-emerald-50 rounded-xl hover:bg-emerald-100 transition-colors text-center group">
-            <div class="w-12 h-12 mx-auto mb-2 rounded-xl bg-emerald-100 group-hover:bg-emerald-200 flex items-center justify-center transition-colors">
-              <svg class="w-6 h-6 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-              </svg>
+          <!-- Saldo Bank & Tunai -->
+          <div class="grid grid-cols-2 gap-3">
+            <div class="p-3 bg-blue-50 rounded-xl">
+              <div class="flex items-center gap-2 mb-2">
+                <div class="w-8 h-8 rounded-lg bg-blue-500 flex items-center justify-center">
+                  <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                  </svg>
+                </div>
+                <span class="text-xs text-blue-600 font-medium">Saldo Bank</span>
+              </div>
+              <p class="text-lg font-bold text-blue-700">{{ formatCurrency(saldo.bank) }}</p>
             </div>
-            <p class="text-sm font-medium text-emerald-700">List Pelimpahan</p>
-          </router-link>
 
-          <router-link to="/units" class="p-4 bg-amber-50 rounded-xl hover:bg-amber-100 transition-colors text-center group">
-            <div class="w-12 h-12 mx-auto mb-2 rounded-xl bg-amber-100 group-hover:bg-amber-200 flex items-center justify-center transition-colors">
-              <svg class="w-6 h-6 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-              </svg>
+            <div class="p-3 bg-emerald-50 rounded-xl">
+              <div class="flex items-center gap-2 mb-2">
+                <div class="w-8 h-8 rounded-lg bg-emerald-500 flex items-center justify-center">
+                  <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
+                  </svg>
+                </div>
+                <span class="text-xs text-emerald-600 font-medium">Saldo Tunai</span>
+              </div>
+              <p class="text-lg font-bold text-emerald-700">{{ formatCurrency(saldo.tunai) }}</p>
             </div>
-            <p class="text-sm font-medium text-amber-700">Unit Kerja</p>
-          </router-link>
+          </div>
 
-          <router-link to="/jenis-pelimpahan" class="p-4 bg-purple-50 rounded-xl hover:bg-purple-100 transition-colors text-center group">
-            <div class="w-12 h-12 mx-auto mb-2 rounded-xl bg-purple-100 group-hover:bg-purple-200 flex items-center justify-center transition-colors">
-              <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
-              </svg>
-            </div>
-            <p class="text-sm font-medium text-purple-700">Jenis Pelimpahan</p>
-          </router-link>
+          <!-- Quick Actions: Input & List -->
+          <div class="grid grid-cols-2 gap-3 pt-3 border-t border-secondary-100">
+            <router-link to="/pelimpahan/create" class="flex items-center gap-3 p-3 bg-primary-50 rounded-xl hover:bg-primary-100 transition-colors group">
+              <div class="w-10 h-10 rounded-lg bg-primary-500 flex items-center justify-center">
+                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                </svg>
+              </div>
+              <div>
+                <p class="text-sm font-semibold text-primary-700">Input</p>
+                <p class="text-[10px] text-primary-500">Pelimpahan</p>
+              </div>
+            </router-link>
+
+            <router-link to="/pelimpahan" class="flex items-center gap-3 p-3 bg-emerald-50 rounded-xl hover:bg-emerald-100 transition-colors group">
+              <div class="w-10 h-10 rounded-lg bg-emerald-500 flex items-center justify-center">
+                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                </svg>
+              </div>
+              <div>
+                <p class="text-sm font-semibold text-emerald-700">List</p>
+                <p class="text-[10px] text-emerald-500">Pelimpahan</p>
+              </div>
+            </router-link>
+          </div>
         </div>
       </div>
 
@@ -215,6 +254,16 @@ const stats = ref({
   total_user: 0,
   recent_pelimpahan: []
 })
+
+// Saldo Bendahara
+const saldo = ref({
+  total: 0,
+  bank: 0,
+  tunai: 0
+})
+
+// API Base URL for images
+const apiBaseUrl = import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:8000'
 
 // Typing effect
 const displayedGreeting = ref('')
@@ -328,6 +377,21 @@ onMounted(async () => {
     }
   } catch (error) {
     console.error('Failed to load dashboard stats:', error)
+  }
+
+  // Load saldo bendahara
+  try {
+    const saldoResponse = await api.get('/saldo-bendahara/latest')
+    if (saldoResponse.data.success && saldoResponse.data.data) {
+      const data = saldoResponse.data.data
+      saldo.value = {
+        total: (data.saldo_bank || 0) + (data.saldo_tunai || 0),
+        bank: data.saldo_bank || 0,
+        tunai: data.saldo_tunai || 0
+      }
+    }
+  } catch (error) {
+    console.log('Failed to load saldo:', error)
   }
 
   // Load countdown settings
