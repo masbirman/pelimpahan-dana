@@ -81,6 +81,9 @@ func main() {
 			protected.GET("/settings/branding", controllers.GetBranding)
 			protected.PUT("/settings/branding", controllers.SaveBranding)
 			protected.POST("/settings/logo", controllers.UploadLogo)
+			protected.GET("/settings/report-header", controllers.GetReportHeader)
+			protected.PUT("/settings/report-header", controllers.SaveReportHeader)
+			protected.POST("/settings/report-logo", controllers.UploadReportLogo)
 
 			// Units - specific routes BEFORE wildcard :id
 			protected.GET("/units", controllers.GetUnits)

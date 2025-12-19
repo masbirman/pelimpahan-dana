@@ -24,8 +24,24 @@
     <!-- Report Content -->
     <div id="report-content" class="card">
       <div class="card-body space-y-6">
+        <!-- Kop Surat (Letterhead) -->
+        <div v-if="reportHeader.header.instansi" class="print-header">
+          <div class="flex items-center gap-4 pb-3">
+            <div class="w-16 h-16 flex-shrink-0 print-logo">
+              <img v-if="reportLogoUrl" :src="reportLogoUrl" class="w-full h-full object-contain" />
+            </div>
+            <div class="text-center flex-1">
+              <p class="text-xs font-medium text-secondary-600 uppercase">{{ reportHeader.header.instansi }}</p>
+              <p class="text-xl font-bold text-secondary-900">{{ reportHeader.header.dinas }}</p>
+              <p class="text-xs text-secondary-500">{{ reportHeader.header.alamat }}</p>
+            </div>
+          </div>
+          <hr class="border-t-2 border-secondary-900" />
+          <hr class="border-t border-secondary-900 mt-1" />
+        </div>
+
         <!-- Header Info -->
-        <div class="text-center border-b border-secondary-200 pb-6">
+        <div class="text-center border-b border-secondary-200 pb-6 pt-4">
           <h2 class="text-xl font-bold text-secondary-900">LAPORAN PELIMPAHAN DANA</h2>
           <p class="text-secondary-600">{{ pelimpahan?.jenis_pelimpahan?.nama_jenis }}</p>
         </div>
@@ -103,10 +119,28 @@
         </div>
 
         <!-- Terbilang -->
-        <div class="bg-primary-50 rounded-lg p-4">
+        <div class="bg-primary-50 rounded-lg p-4 print-terbilang">
           <p class="text-sm text-primary-700">
             <span class="font-medium">Terbilang:</span> {{ terbilang(pelimpahan?.total_jumlah) }} Rupiah
           </p>
+        </div>
+
+        <!-- Tanda Tangan -->
+        <div v-if="reportHeader.signatory_left.nama || reportHeader.signatory_right.nama" class="mt-8 pt-8 print-signature">
+          <div class="grid grid-cols-2 gap-8 text-center text-sm">
+            <div>
+              <p class="text-secondary-700">{{ reportHeader.signatory_left.jabatan }}</p>
+              <div class="h-20"></div>
+              <p class="font-bold text-secondary-900 underline">{{ reportHeader.signatory_left.nama }}</p>
+              <p class="text-secondary-600 text-xs">{{ reportHeader.signatory_left.nip }}</p>
+            </div>
+            <div>
+              <p class="text-secondary-700">{{ reportHeader.signatory_right.jabatan }}</p>
+              <div class="h-20"></div>
+              <p class="font-bold text-secondary-900 underline">{{ reportHeader.signatory_right.nama }}</p>
+              <p class="text-secondary-600 text-xs">{{ reportHeader.signatory_right.nip }}</p>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -114,7 +148,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import api from '@/services/api'
 import { useNotificationStore } from '@/stores/notification'
@@ -124,12 +158,51 @@ const router = useRouter()
 const notificationStore = useNotificationStore()
 
 const pelimpahan = ref(null)
+const reportHeader = ref({
+  header: { logo_url: '', instansi: '', dinas: '', alamat: '' },
+  signatory_left: { jabatan: '', nama: '', nip: '' },
+  signatory_right: { jabatan: '', nama: '', nip: '' }
+})
+
+// Helper to get full logo URL from relative path
+const apiBaseUrl = import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:8000'
+const reportLogoUrl = computed(() => {
+  const url = reportHeader.value.header.logo_url
+  if (!url) return ''
+  if (url.startsWith('http')) return url
+  return apiBaseUrl + url
+})
 
 onMounted(async () => {
   try {
+    // Load pelimpahan data
     const response = await api.get(`/pelimpahan/${route.params.id}`)
     if (response.data.success) {
       pelimpahan.value = response.data.data
+    }
+    
+    // Load report header settings
+    const headerResponse = await api.get('/settings/report-header')
+    if (headerResponse.data.success && headerResponse.data.data) {
+      const data = headerResponse.data.data
+      reportHeader.value = {
+        header: {
+          logo_url: data.header?.logo_url || '',
+          instansi: data.header?.instansi || '',
+          dinas: data.header?.dinas || '',
+          alamat: data.header?.alamat || ''
+        },
+        signatory_left: {
+          jabatan: data.signatory_left?.jabatan || '',
+          nama: data.signatory_left?.nama || '',
+          nip: data.signatory_left?.nip || ''
+        },
+        signatory_right: {
+          jabatan: data.signatory_right?.jabatan || '',
+          nama: data.signatory_right?.nama || '',
+          nip: data.signatory_right?.nip || ''
+        }
+      }
     }
   } catch (error) {
     notificationStore.error('Gagal memuat data')
@@ -193,6 +266,27 @@ function printReport() {
     left: 0;
     top: 0;
     width: 100%;
+    padding: 20px;
+  }
+  .print-header {
+    margin-bottom: 20px;
+  }
+  .print-logo img {
+    max-width: 60px;
+    max-height: 60px;
+  }
+  .print-terbilang {
+    background: #f0f0f0 !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  .print-signature {
+    page-break-inside: avoid;
+    margin-top: 40px;
+  }
+  /* Hide colored badges in print */
+  .bg-blue-100, .bg-emerald-100 {
+    background: transparent !important;
   }
 }
 </style>

@@ -20,6 +20,12 @@
         >
           Countdown Dashboard
         </button>
+        <button 
+          @click="activeTab = 'report'" 
+          :class="['pb-3 px-1 text-sm font-medium border-b-2 transition-colors', activeTab === 'report' ? 'border-primary-600 text-primary-600' : 'border-transparent text-secondary-500 hover:text-secondary-700']"
+        >
+          Pengaturan Laporan
+        </button>
       </nav>
     </div>
 
@@ -171,11 +177,157 @@
         </div>
       </div>
     </div>
+
+    <!-- Report Header Tab -->
+    <div v-if="activeTab === 'report'" class="space-y-6">
+      <!-- Kop Surat -->
+      <div class="card">
+        <div class="card-header">
+          <h3 class="font-semibold text-secondary-900">Kop Surat (Letterhead)</h3>
+        </div>
+        <div class="card-body space-y-4">
+          <p class="text-sm text-secondary-500">Atur kop surat yang akan tampil di bagian atas laporan saat dicetak.</p>
+
+          <!-- Logo Upload -->
+          <div>
+            <label class="block text-sm font-medium text-secondary-700 mb-2">Logo Instansi</label>
+            <div class="flex items-center gap-6">
+              <div class="w-20 h-20 rounded-lg bg-secondary-100 flex items-center justify-center overflow-hidden border">
+                <img v-if="reportLogoUrl" :src="reportLogoUrl" alt="Logo" class="w-full h-full object-contain" />
+                <svg v-else class="w-8 h-8 text-secondary-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+              </div>
+              <div>
+                <input ref="reportLogoInput" type="file" accept="image/*" class="hidden" @change="uploadReportLogo" />
+                <button @click="$refs.reportLogoInput.click()" class="btn-secondary text-sm">
+                  <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                  Upload Logo
+                </button>
+                <p class="text-xs text-secondary-500 mt-1">PNG/JPG. Max 2MB. Ideal: logo instansi Anda</p>
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-secondary-700 mb-1">Nama Instansi</label>
+            <input v-model="reportHeader.header.instansi" type="text" class="input" placeholder="Contoh: PEMERINTAH PROVINSI SULAWESI TENGAH" />
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-secondary-700 mb-1">Nama Dinas/OPD</label>
+            <input v-model="reportHeader.header.dinas" type="text" class="input" placeholder="Contoh: DINAS PENDIDIKAN" />
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-secondary-700 mb-1">Alamat Lengkap</label>
+            <input v-model="reportHeader.header.alamat" type="text" class="input" placeholder="Contoh: Jalan Setia Budi No. 9 Palu Telp. (0451) 421290" />
+          </div>
+
+          <!-- Preview Kop Surat -->
+          <div class="p-4 bg-secondary-50 rounded-xl mt-4">
+            <p class="text-xs text-secondary-500 mb-3">Preview Kop Surat:</p>
+            <div class="bg-white p-4 rounded border">
+              <div class="flex items-center gap-4">
+                <div class="w-16 h-16 flex-shrink-0">
+                  <img v-if="reportLogoUrl" :src="reportLogoUrl" class="w-full h-full object-contain" />
+                  <div v-else class="w-full h-full bg-secondary-200 rounded flex items-center justify-center">
+                    <span class="text-xs text-secondary-400">Logo</span>
+                  </div>
+                </div>
+                <div class="text-center flex-1">
+                  <p class="text-xs font-medium text-secondary-600">{{ reportHeader.header.instansi || 'PEMERINTAH PROVINSI ...' }}</p>
+                  <p class="text-lg font-bold text-secondary-900">{{ reportHeader.header.dinas || 'DINAS ...' }}</p>
+                  <p class="text-xs text-secondary-500">{{ reportHeader.header.alamat || 'Alamat lengkap...' }}</p>
+                </div>
+              </div>
+              <hr class="mt-3 border-t-2 border-secondary-900" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Penandatanganan -->
+      <div class="card">
+        <div class="card-header">
+          <h3 class="font-semibold text-secondary-900">Penandatanganan</h3>
+        </div>
+        <div class="card-body space-y-6">
+          <p class="text-sm text-secondary-500">Atur pejabat yang menandatangani laporan (tampil di bagian bawah laporan).</p>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- Penandatangan Kiri -->
+            <div class="space-y-4 p-4 bg-secondary-50 rounded-xl">
+              <h4 class="font-medium text-secondary-900">Penandatangan Kiri</h4>
+              <div>
+                <label class="block text-sm font-medium text-secondary-700 mb-1">Jabatan</label>
+                <input v-model="reportHeader.signatory_left.jabatan" type="text" class="input" placeholder="Contoh: Bendahara Pengeluaran," />
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-secondary-700 mb-1">Nama Lengkap (dengan gelar)</label>
+                <input v-model="reportHeader.signatory_left.nama" type="text" class="input" placeholder="Contoh: ASTUTY SULISTIYANTY, ST" />
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-secondary-700 mb-1">NIP</label>
+                <input v-model="reportHeader.signatory_left.nip" type="text" class="input" placeholder="Contoh: NIP. 19800924 201001 2 004" />
+              </div>
+            </div>
+
+            <!-- Penandatangan Kanan -->
+            <div class="space-y-4 p-4 bg-secondary-50 rounded-xl">
+              <h4 class="font-medium text-secondary-900">Penandatangan Kanan</h4>
+              <div>
+                <label class="block text-sm font-medium text-secondary-700 mb-1">Jabatan</label>
+                <input v-model="reportHeader.signatory_right.jabatan" type="text" class="input" placeholder="Contoh: Pengguna Anggaran," />
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-secondary-700 mb-1">Nama Lengkap (dengan gelar)</label>
+                <input v-model="reportHeader.signatory_right.nama" type="text" class="input" placeholder="Contoh: YUDIAWATI V. WINDARRUSLIANA, SKM., M.Kes" />
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-secondary-700 mb-1">NIP</label>
+                <input v-model="reportHeader.signatory_right.nip" type="text" class="input" placeholder="Contoh: NIP. 19670712 199003 2 013" />
+              </div>
+            </div>
+          </div>
+
+          <!-- Preview Tanda Tangan -->
+          <div class="p-4 bg-secondary-50 rounded-xl">
+            <p class="text-xs text-secondary-500 mb-3">Preview Tanda Tangan:</p>
+            <div class="bg-white p-4 rounded border">
+              <div class="grid grid-cols-2 gap-8 text-center text-sm">
+                <div>
+                  <p class="text-secondary-700">{{ reportHeader.signatory_left.jabatan || 'Jabatan Kiri,' }}</p>
+                  <div class="h-16"></div>
+                  <p class="font-bold text-secondary-900 underline">{{ reportHeader.signatory_left.nama || 'NAMA LENGKAP' }}</p>
+                  <p class="text-secondary-600 text-xs">{{ reportHeader.signatory_left.nip || 'NIP. ...' }}</p>
+                </div>
+                <div>
+                  <p class="text-secondary-700">{{ reportHeader.signatory_right.jabatan || 'Jabatan Kanan,' }}</p>
+                  <div class="h-16"></div>
+                  <p class="font-bold text-secondary-900 underline">{{ reportHeader.signatory_right.nama || 'NAMA LENGKAP' }}</p>
+                  <p class="text-secondary-600 text-xs">{{ reportHeader.signatory_right.nip || 'NIP. ...' }}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="flex justify-end gap-3">
+        <router-link to="/" class="btn-secondary">Batal</router-link>
+        <button @click="saveReportHeader" :disabled="savingReport" class="btn-primary">
+          {{ savingReport ? 'Menyimpan...' : 'Simpan Pengaturan Laporan' }}
+        </button>
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted, watch } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import api from '@/services/api'
 import { useNotificationStore } from '@/stores/notification'
 
@@ -203,6 +355,36 @@ const countdown = ref({
 
 const previewCountdown = ref({ days: '00', hours: '00', minutes: '00', seconds: '00' })
 let previewInterval = null
+
+// Report Header settings
+const savingReport = ref(false)
+const reportHeader = ref({
+  header: {
+    logo_url: '',
+    instansi: '',
+    dinas: '',
+    alamat: ''
+  },
+  signatory_left: {
+    jabatan: '',
+    nama: '',
+    nip: ''
+  },
+  signatory_right: {
+    jabatan: '',
+    nama: '',
+    nip: ''
+  }
+})
+
+// Helper to get full logo URL from relative path
+const apiBaseUrl = import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:8000'
+const reportLogoUrl = computed(() => {
+  const url = reportHeader.value.header.logo_url
+  if (!url) return ''
+  if (url.startsWith('http')) return url
+  return apiBaseUrl + url
+})
 
 function updatePreview() {
   if (!countdown.value.target_date) {
@@ -326,4 +508,77 @@ async function saveCountdown() {
     savingCountdown.value = false
   }
 }
+
+// Report Header Functions
+async function loadReportHeader() {
+  try {
+    const response = await api.get('/settings/report-header')
+    if (response.data.success && response.data.data) {
+      const data = response.data.data
+      reportHeader.value = {
+        header: {
+          logo_url: data.header?.logo_url || '',
+          instansi: data.header?.instansi || '',
+          dinas: data.header?.dinas || '',
+          alamat: data.header?.alamat || ''
+        },
+        signatory_left: {
+          jabatan: data.signatory_left?.jabatan || '',
+          nama: data.signatory_left?.nama || '',
+          nip: data.signatory_left?.nip || ''
+        },
+        signatory_right: {
+          jabatan: data.signatory_right?.jabatan || '',
+          nama: data.signatory_right?.nama || '',
+          nip: data.signatory_right?.nip || ''
+        }
+      }
+    }
+  } catch (error) {
+    console.log('No report header settings found')
+  }
+}
+
+async function uploadReportLogo(event) {
+  const file = event.target.files[0]
+  if (!file) return
+  
+  if (file.size > 2 * 1024 * 1024) {
+    notificationStore.error('Ukuran file maksimal 2MB')
+    return
+  }
+  
+  try {
+    const formData = new FormData()
+    formData.append('logo', file)
+    const response = await api.post('/settings/report-logo', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    })
+    if (response.data.success) {
+      reportHeader.value.header.logo_url = response.data.data.logo_url
+      notificationStore.success('Logo kop surat berhasil diupload')
+    }
+  } catch (error) {
+    notificationStore.error('Gagal mengupload logo')
+  }
+}
+
+async function saveReportHeader() {
+  savingReport.value = true
+  try {
+    const response = await api.put('/settings/report-header', reportHeader.value)
+    if (response.data.success) {
+      notificationStore.success('Pengaturan laporan berhasil disimpan')
+    }
+  } catch (error) {
+    notificationStore.error('Gagal menyimpan pengaturan')
+  } finally {
+    savingReport.value = false
+  }
+}
+
+// Load report header on mount
+onMounted(async () => {
+  await loadReportHeader()
+})
 </script>

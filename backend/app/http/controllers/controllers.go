@@ -440,6 +440,137 @@ func UploadLogo(c *gin.Context) {
 	})
 }
 
+// Get Report Header Settings (kop surat & tanda tangan)
+func GetReportHeader(c *gin.Context) {
+	var setting models.Setting
+	if err := DB.Where("key = ?", "report_header").First(&setting).Error; err != nil {
+		c.JSON(http.StatusOK, gin.H{
+			"success": true,
+			"data":    nil,
+		})
+		return
+	}
+
+	var data map[string]interface{}
+	if err := json.Unmarshal([]byte(setting.Value), &data); err != nil {
+		c.JSON(http.StatusOK, gin.H{"success": true, "data": nil})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"data":    data,
+	})
+}
+
+// Save Report Header Settings
+func SaveReportHeader(c *gin.Context) {
+	var req struct {
+		Header struct {
+			LogoUrl  string `json:"logo_url"`
+			Instansi string `json:"instansi"`
+			Dinas    string `json:"dinas"`
+			Alamat   string `json:"alamat"`
+		} `json:"header"`
+		SignatoryLeft struct {
+			Jabatan string `json:"jabatan"`
+			Nama    string `json:"nama"`
+			Nip     string `json:"nip"`
+		} `json:"signatory_left"`
+		SignatoryRight struct {
+			Jabatan string `json:"jabatan"`
+			Nama    string `json:"nama"`
+			Nip     string `json:"nip"`
+		} `json:"signatory_right"`
+	}
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": "Invalid request"})
+		return
+	}
+
+	data := map[string]interface{}{
+		"header": map[string]interface{}{
+			"logo_url": req.Header.LogoUrl,
+			"instansi": req.Header.Instansi,
+			"dinas":    req.Header.Dinas,
+			"alamat":   req.Header.Alamat,
+		},
+		"signatory_left": map[string]interface{}{
+			"jabatan": req.SignatoryLeft.Jabatan,
+			"nama":    req.SignatoryLeft.Nama,
+			"nip":     req.SignatoryLeft.Nip,
+		},
+		"signatory_right": map[string]interface{}{
+			"jabatan": req.SignatoryRight.Jabatan,
+			"nama":    req.SignatoryRight.Nama,
+			"nip":     req.SignatoryRight.Nip,
+		},
+	}
+	jsonData, _ := json.Marshal(data)
+
+	var setting models.Setting
+	result := DB.Where("key = ?", "report_header").First(&setting)
+	if result.Error != nil {
+		setting = models.Setting{
+			Key:   "report_header",
+			Value: string(jsonData),
+		}
+		DB.Create(&setting)
+	} else {
+		setting.Value = string(jsonData)
+		DB.Save(&setting)
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"message": "Report header settings saved",
+		"data":    data,
+	})
+}
+
+// Upload Report Logo (logo instansi untuk kop surat)
+func UploadReportLogo(c *gin.Context) {
+	file, err := c.FormFile("logo")
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": "File tidak ditemukan"})
+		return
+	}
+
+	if file.Size > 2*1024*1024 {
+		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": "Ukuran file maksimal 2MB"})
+		return
+	}
+
+	uploadDir := "/app/uploads"
+	if err := os.MkdirAll(uploadDir, 0755); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": "Gagal membuat direktori"})
+		return
+	}
+
+	ext := ".png"
+	if strings.Contains(file.Filename, ".") {
+		parts := strings.Split(file.Filename, ".")
+		ext = "." + parts[len(parts)-1]
+	}
+	filename := "report_logo_" + time.Now().Format("20060102150405") + ext
+	savePath := uploadDir + "/" + filename
+
+	if err := c.SaveUploadedFile(file, savePath); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": "Gagal menyimpan file"})
+		return
+	}
+
+	// Return relative path - frontend will construct full URL based on API base URL
+	logoUrl := "/uploads/" + filename
+
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"message": "Logo kop surat berhasil diupload",
+		"data":    gin.H{"logo_url": logoUrl},
+	})
+}
+
 // Unit Controllers
 func GetUnits(c *gin.Context) {
 	var units []models.Unit
