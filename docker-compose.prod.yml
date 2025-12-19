@@ -47,6 +47,7 @@ services:
       dockerfile: Dockerfile.prod
       args:
         VITE_API_URL: https://pelimpahan.keudisdiksulteng.web.id/api
+        VITE_TURNSTILE_SITE_KEY: 0x4AAAAAACHpVkW5Tb6SdAwz
     container_name: pelimpahan-frontend
     restart: unless-stopped
     ports:
