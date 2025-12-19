@@ -965,9 +965,23 @@ func GetPelimpahan(c *gin.Context) {
 		saldoAwal = saldoBank + saldoTunai
 	}
 
-	// Calculate sisa saldo for each pelimpahan (cumulative, separate for bank and tunai)
-	runningBalanceBank := saldoBank
-	runningBalanceTunai := saldoTunai
+	// Get ALL pelimpahan ordered by nomor_pelimpahan ASC to calculate cumulative sisa saldo
+	var allPelimpahan []models.Pelimpahan
+	DB.Model(&models.Pelimpahan{}).Preload("Details").Order("nomor_pelimpahan asc").Find(&allPelimpahan)
+
+	// Build map of cumulative sisa saldo for each pelimpahan
+	sisaSaldoMap := make(map[uint]float64)
+	runningBalance := saldoBank + saldoTunai
+	for _, p := range allPelimpahan {
+		var totalPelimpahan float64 = 0
+		for _, detail := range p.Details {
+			totalPelimpahan += detail.Jumlah
+		}
+		runningBalance -= totalPelimpahan
+		sisaSaldoMap[p.ID] = runningBalance
+	}
+
+	// Build response
 	type PelimpahanWithSaldo struct {
 		models.Pelimpahan
 		SaldoBank  float64 `json:"saldo_bank"`
@@ -975,27 +989,26 @@ func GetPelimpahan(c *gin.Context) {
 		SaldoAwal  float64 `json:"saldo_awal"`
 		SisaSaldo  float64 `json:"sisa_saldo"`
 	}
-	
+
 	var pelimpahanWithSaldo []PelimpahanWithSaldo
 	for _, p := range pelimpahanList {
-		// Subtract from correct source based on each detail's sumber_dana
+		// Calculate jumlah per sumber for this transaction
+		var jumlahBank float64 = 0
+		var jumlahTunai float64 = 0
 		for _, detail := range p.Details {
-			if detail.SumberDana == "bank" {
-				runningBalanceBank -= detail.Jumlah
-			} else if detail.SumberDana == "tunai" {
-				runningBalanceTunai -= detail.Jumlah
+			if detail.SumberDana == "tunai" {
+				jumlahTunai += detail.Jumlah
 			} else {
-				// Default to bank if sumber_dana is not set
-				runningBalanceBank -= detail.Jumlah
+				jumlahBank += detail.Jumlah
 			}
 		}
-		
+
 		pelimpahanWithSaldo = append(pelimpahanWithSaldo, PelimpahanWithSaldo{
 			Pelimpahan: p,
-			SaldoBank:  runningBalanceBank,
-			SaldoTunai: runningBalanceTunai,
+			SaldoBank:  jumlahBank,
+			SaldoTunai: jumlahTunai,
 			SaldoAwal:  saldoAwal,
-			SisaSaldo:  runningBalanceBank + runningBalanceTunai,
+			SisaSaldo:  sisaSaldoMap[p.ID],
 		})
 	}
 
@@ -1112,6 +1125,7 @@ func UpdatePelimpahan(c *gin.Context) {
 			NamaPenerima  string  `json:"nama_penerima"`
 			NomorRekening string  `json:"nomor_rekening"`
 			Jumlah        float64 `json:"jumlah"`
+			SumberDana    string  `json:"sumber_dana"`
 		} `json:"details"`
 	}
 	c.ShouldBindJSON(&req)
@@ -1134,12 +1148,17 @@ func UpdatePelimpahan(c *gin.Context) {
 
 	// Create new details
 	for _, d := range req.Details {
+		sumberDana := d.SumberDana
+		if sumberDana != "bank" && sumberDana != "tunai" {
+			sumberDana = "bank"
+		}
 		detail := models.PelimpahanDetail{
 			PelimpahanID:  pelimpahan.ID,
 			UnitID:        d.UnitID,
 			NamaPenerima:  d.NamaPenerima,
 			NomorRekening: d.NomorRekening,
 			Jumlah:        d.Jumlah,
+			SumberDana:    sumberDana,
 		}
 		DB.Create(&detail)
 	}

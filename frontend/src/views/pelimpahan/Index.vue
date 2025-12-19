@@ -57,8 +57,8 @@
               <th class="px-6 py-4 table-header">Uraian</th>
               <th class="px-6 py-4 table-header">Penerima</th>
               <th class="px-6 py-4 table-header text-right">Total</th>
-              <th class="px-6 py-4 table-header text-right">Saldo Bank</th>
-              <th class="px-6 py-4 table-header text-right">Saldo Tunai</th>
+              <th class="px-6 py-4 table-header text-right">Pelimpahan Bank</th>
+              <th class="px-6 py-4 table-header text-right">Pelimpahan Tunai</th>
               <th class="px-6 py-4 table-header text-right">Saldo Awal</th>
               <th class="px-6 py-4 table-header text-right">Sisa Saldo</th>
               <th class="px-6 py-4 table-header text-right">Aksi</th>
