@@ -8,8 +8,8 @@
     <!-- Logo -->
     <div class="h-16 flex items-center justify-center border-b border-secondary-200 px-4">
       <div v-if="!collapsed" class="flex items-center gap-3">
-        <div v-if="branding.logo_url" class="w-10 h-10 rounded-xl overflow-hidden">
-          <img :src="branding.logo_url" alt="Logo" class="w-full h-full object-cover" />
+        <div v-if="logoUrl" class="w-10 h-10 rounded-xl overflow-hidden">
+          <img :src="logoUrl" alt="Logo" class="w-full h-full object-cover" />
         </div>
         <div v-else class="w-10 h-10 rounded-xl bg-gradient-to-br from-primary-500 to-primary-700 flex items-center justify-center">
           <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -22,8 +22,8 @@
         </div>
       </div>
       <div v-else>
-        <div v-if="branding.logo_url" class="w-10 h-10 rounded-xl overflow-hidden">
-          <img :src="branding.logo_url" alt="Logo" class="w-full h-full object-cover" />
+        <div v-if="logoUrl" class="w-10 h-10 rounded-xl overflow-hidden">
+          <img :src="logoUrl" alt="Logo" class="w-full h-full object-cover" />
         </div>
         <div v-else class="w-10 h-10 rounded-xl bg-gradient-to-br from-primary-500 to-primary-700 flex items-center justify-center">
           <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -58,8 +58,8 @@
     <!-- User Info -->
     <div class="border-t border-secondary-200 p-4">
       <div :class="['flex items-center gap-3', collapsed ? 'justify-center' : '']">
-        <div v-if="authStore.user?.avatar" class="w-10 h-10 rounded-full overflow-hidden">
-          <img :src="authStore.user.avatar" alt="Avatar" class="w-full h-full object-cover" />
+        <div v-if="avatarUrl" class="w-10 h-10 rounded-full overflow-hidden">
+          <img :src="avatarUrl" alt="Avatar" class="w-full h-full object-cover" />
         </div>
         <div v-else class="w-10 h-10 rounded-full bg-gradient-to-br from-primary-400 to-primary-600 flex items-center justify-center text-white font-semibold">
           {{ authStore.user?.name?.charAt(0).toUpperCase() || 'U' }}
@@ -92,6 +92,22 @@ const branding = ref({
   app_subtitle: 'Dana UP/GU',
   logo_url: ''
 })
+
+// API Base URL for images
+const apiBaseUrl = import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:8000'
+
+// Helper to resolve image URLs (handles relative and absolute)
+function resolveImageUrl(url) {
+  if (!url) return ''
+  if (url.startsWith('http')) return url
+  return apiBaseUrl + url
+}
+
+// Computed logo URL
+const logoUrl = computed(() => resolveImageUrl(branding.value.logo_url))
+
+// Computed avatar URL
+const avatarUrl = computed(() => resolveImageUrl(authStore.user?.avatar))
 
 onMounted(async () => {
   try {

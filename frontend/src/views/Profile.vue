@@ -10,8 +10,8 @@
         <!-- Avatar Section -->
         <div class="flex items-center gap-6">
           <div class="relative">
-            <div v-if="user.avatar" class="w-24 h-24 rounded-full overflow-hidden bg-secondary-200">
-              <img :src="user.avatar" alt="Avatar" class="w-full h-full object-cover" />
+            <div v-if="avatarUrl" class="w-24 h-24 rounded-full overflow-hidden bg-secondary-200">
+              <img :src="avatarUrl" alt="Avatar" class="w-full h-full object-cover" />
             </div>
             <div v-else class="w-24 h-24 rounded-full bg-gradient-to-br from-primary-500 to-primary-600 flex items-center justify-center text-white text-3xl font-bold">
               {{ user.name?.charAt(0)?.toUpperCase() }}
@@ -102,6 +102,19 @@ const roleLabel = computed(() => {
   const roles = { super_admin: 'Super Admin', bendahara: 'Bendahara', operator: 'Operator' }
   return roles[user.value.role] || user.value.role
 })
+
+// API Base URL for images
+const apiBaseUrl = import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:8000'
+
+// Helper to resolve image URLs (handles relative and absolute)
+function resolveImageUrl(url) {
+  if (!url) return ''
+  if (url.startsWith('http')) return url
+  return apiBaseUrl + url
+}
+
+// Computed avatar URL
+const avatarUrl = computed(() => resolveImageUrl(user.value.avatar))
 
 onMounted(async () => {
   try {

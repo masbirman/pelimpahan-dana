@@ -7,6 +7,7 @@ import (
 type User struct {
 	ID        uint      `gorm:"primarykey" json:"id"`
 	Name      string    `gorm:"type:varchar(255);not null" json:"name"`
+	Username  string    `gorm:"type:varchar(100);unique;not null" json:"username"`
 	Email     string    `gorm:"type:varchar(255);unique;not null" json:"email"`
 	Password  string    `gorm:"type:varchar(255);not null" json:"-"`
 	Role      string    `gorm:"type:varchar(50);not null;default:'operator'" json:"role"`
@@ -37,6 +38,7 @@ type JenisPelimpahan struct {
 
 type Pelimpahan struct {
 	ID                uint               `gorm:"primarykey" json:"id"`
+	TahunAnggaran     int                `gorm:"not null;default:2025" json:"tahun_anggaran"`
 	NomorPelimpahan   int                `gorm:"not null" json:"nomor_pelimpahan"`
 	WaktuPelimpahan   time.Time          `gorm:"not null" json:"waktu_pelimpahan"`
 	TanggalPelimpahan time.Time          `gorm:"type:date;not null" json:"tanggal_pelimpahan"`
@@ -73,40 +75,43 @@ type Setting struct {
 }
 
 type SaldoBendahara struct {
-	ID         uint      `gorm:"primarykey" json:"id"`
-	Tanggal    time.Time `gorm:"type:date;not null" json:"tanggal"`
-	SaldoBank  float64   `gorm:"type:decimal(15,2);not null;default:0" json:"saldo_bank"`
-	SaldoTunai float64   `gorm:"type:decimal(15,2);not null;default:0" json:"saldo_tunai"`
-	Keterangan string    `gorm:"type:text" json:"keterangan"`
-	CreatedBy  uint      `json:"created_by"`
-	CreatedAt  time.Time `json:"created_at"`
-	UpdatedAt  time.Time `json:"updated_at"`
+	ID            uint      `gorm:"primarykey" json:"id"`
+	TahunAnggaran int       `gorm:"not null;default:2025" json:"tahun_anggaran"`
+	Tanggal       time.Time `gorm:"type:date;not null" json:"tanggal"`
+	SaldoBank     float64   `gorm:"type:decimal(15,2);not null;default:0" json:"saldo_bank"`
+	SaldoTunai    float64   `gorm:"type:decimal(15,2);not null;default:0" json:"saldo_tunai"`
+	Keterangan    string    `gorm:"type:text" json:"keterangan"`
+	CreatedBy     uint      `json:"created_by"`
+	CreatedAt     time.Time `json:"created_at"`
+	UpdatedAt     time.Time `json:"updated_at"`
 
 	// Relations
 	Creator User `gorm:"foreignKey:CreatedBy" json:"creator,omitempty"`
 }
 
 type TopUpSaldo struct {
-	ID         uint      `gorm:"primarykey" json:"id"`
-	Tanggal    time.Time `gorm:"type:date;not null" json:"tanggal"`
-	Jumlah     float64   `gorm:"type:decimal(15,2);not null" json:"jumlah"`
-	Keterangan string    `gorm:"type:text;not null" json:"keterangan"`
-	CreatedBy  uint      `gorm:"not null" json:"created_by"`
-	CreatedAt  time.Time `json:"created_at"`
-	UpdatedAt  time.Time `json:"updated_at"`
+	ID            uint      `gorm:"primarykey" json:"id"`
+	TahunAnggaran int       `gorm:"not null;default:2025" json:"tahun_anggaran"`
+	Tanggal       time.Time `gorm:"type:date;not null" json:"tanggal"`
+	Jumlah        float64   `gorm:"type:decimal(15,2);not null" json:"jumlah"`
+	Keterangan    string    `gorm:"type:text;not null" json:"keterangan"`
+	CreatedBy     uint      `gorm:"not null" json:"created_by"`
+	CreatedAt     time.Time `json:"created_at"`
+	UpdatedAt     time.Time `json:"updated_at"`
 
 	// Relations
 	Creator User `gorm:"foreignKey:CreatedBy" json:"creator,omitempty"`
 }
 
 type PenarikanTunai struct {
-	ID         uint      `gorm:"primarykey" json:"id"`
-	Tanggal    time.Time `gorm:"type:date;not null" json:"tanggal"`
-	Jumlah     float64   `gorm:"type:decimal(15,2);not null" json:"jumlah"`
-	Keterangan string    `gorm:"type:text;not null" json:"keterangan"`
-	CreatedBy  uint      `gorm:"not null" json:"created_by"`
-	CreatedAt  time.Time `json:"created_at"`
-	UpdatedAt  time.Time `json:"updated_at"`
+	ID            uint      `gorm:"primarykey" json:"id"`
+	TahunAnggaran int       `gorm:"not null;default:2025" json:"tahun_anggaran"`
+	Tanggal       time.Time `gorm:"type:date;not null" json:"tanggal"`
+	Jumlah        float64   `gorm:"type:decimal(15,2);not null" json:"jumlah"`
+	Keterangan    string    `gorm:"type:text;not null" json:"keterangan"`
+	CreatedBy     uint      `gorm:"not null" json:"created_by"`
+	CreatedAt     time.Time `json:"created_at"`
+	UpdatedAt     time.Time `json:"updated_at"`
 
 	// Relations
 	Creator User `gorm:"foreignKey:CreatedBy" json:"creator,omitempty"`

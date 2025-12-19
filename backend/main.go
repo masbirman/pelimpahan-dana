@@ -212,9 +212,9 @@ func seedDatabase(db *gorm.DB) {
 
 	// Seed users
 	users := []models.User{
-		{Name: "Super Administrator", Email: "admin@pelimpahan.local", Password: string(hashedPassword), Role: "super_admin", IsActive: true},
-		{Name: "Bendahara Utama", Email: "bendahara@pelimpahan.local", Password: string(hashedPassword), Role: "bendahara", IsActive: true},
-		{Name: "Operator Input", Email: "operator@pelimpahan.local", Password: string(hashedPassword), Role: "operator", IsActive: true},
+		{Name: "Super Administrator", Username: "admin", Email: "admin@pelimpahan.local", Password: string(hashedPassword), Role: "super_admin", IsActive: true},
+		{Name: "Bendahara Utama", Username: "bendahara", Email: "bendahara@pelimpahan.local", Password: string(hashedPassword), Role: "bendahara", IsActive: true},
+		{Name: "Operator Input", Username: "operator", Email: "operator@pelimpahan.local", Password: string(hashedPassword), Role: "operator", IsActive: true},
 	}
 	for _, u := range users {
 		db.Create(&u)

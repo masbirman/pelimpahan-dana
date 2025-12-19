@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"encoding/json"
+	"log"
 	"net/http"
 	"os"
 	"strconv"
@@ -26,7 +27,7 @@ func SetDB(db *gorm.DB) {
 // Auth Controllers
 func Login(c *gin.Context) {
 	var req struct {
-		Email    string `json:"email" binding:"required"`
+		Username string `json:"username" binding:"required"`
 		Password string `json:"password" binding:"required"`
 	}
 
@@ -36,8 +37,8 @@ func Login(c *gin.Context) {
 	}
 
 	var user models.User
-	if err := DB.Where("email = ?", req.Email).First(&user).Error; err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"success": false, "message": "Email atau password salah"})
+	if err := DB.Where("username = ?", req.Username).First(&user).Error; err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"success": false, "message": "Username atau password salah"})
 		return
 	}
 
@@ -47,7 +48,7 @@ func Login(c *gin.Context) {
 	}
 
 	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(req.Password)); err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"success": false, "message": "Email atau password salah"})
+		c.JSON(http.StatusUnauthorized, gin.H{"success": false, "message": "Username atau password salah"})
 		return
 	}
 
@@ -76,6 +77,7 @@ func Login(c *gin.Context) {
 			"user": gin.H{
 				"id":        user.ID,
 				"name":      user.Name,
+				"username":  user.Username,
 				"email":     user.Email,
 				"role":      user.Role,
 				"avatar":    user.Avatar,
@@ -231,13 +233,23 @@ func UploadAvatar(c *gin.Context) {
 func DashboardStats(c *gin.Context) {
 	var totalPelimpahan, totalUnit, totalJenis, totalUser int64
 
-	DB.Model(&models.Pelimpahan{}).Count(&totalPelimpahan)
+	// Get tahun anggaran from header (default to 2025 if not provided)
+	tahunAnggaran := c.GetHeader("X-Tahun-Anggaran")
+	if tahunAnggaran == "" {
+		tahunAnggaran = "2025"
+	}
+	
+	// Debug log
+	log.Printf("DashboardStats: tahun_anggaran header = %s", tahunAnggaran)
+
+	DB.Model(&models.Pelimpahan{}).Where("tahun_anggaran = ?", tahunAnggaran).Count(&totalPelimpahan)
 	DB.Model(&models.Unit{}).Count(&totalUnit)
 	DB.Model(&models.JenisPelimpahan{}).Count(&totalJenis)
 	DB.Model(&models.User{}).Count(&totalUser)
 
 	var recentPelimpahan []models.Pelimpahan
 	DB.Preload("JenisPelimpahan").Preload("Details").
+		Where("tahun_anggaran = ?", tahunAnggaran).
 		Order("created_at desc").Limit(5).Find(&recentPelimpahan)
 
 	c.JSON(http.StatusOK, gin.H{
@@ -932,6 +944,13 @@ func GetPelimpahan(c *gin.Context) {
 		query = query.Where("jenis_pelimpahan_id = ?", jenisID)
 	}
 
+	// Year-based filtering
+	tahunAnggaran := c.GetHeader("X-Tahun-Anggaran")
+	if tahunAnggaran == "" {
+		tahunAnggaran = "2025"
+	}
+	query = query.Where("tahun_anggaran = ?", tahunAnggaran)
+
 	// Role-based filtering
 	userRole := c.GetString("user_role")
 	if userRole == "operator" {
@@ -1269,6 +1288,13 @@ func GetSaldoBendahara(c *gin.Context) {
 	var saldos []models.SaldoBendahara
 	query := DB.Model(&models.SaldoBendahara{}).Preload("Creator")
 
+	// Year filtering
+	tahunAnggaran := c.GetHeader("X-Tahun-Anggaran")
+	if tahunAnggaran == "" {
+		tahunAnggaran = "2025"
+	}
+	query = query.Where("tahun_anggaran = ?", tahunAnggaran)
+
 	// Search
 	if search := c.Query("search"); search != "" {
 		query = query.Where("keterangan ILIKE ?", "%"+search+"%")
@@ -1301,34 +1327,48 @@ func GetSaldoBendahara(c *gin.Context) {
 }
 
 func GetLatestSaldo(c *gin.Context) {
-	// Get latest saldo bendahara (saldo awal)
+	// Get tahun anggaran from header
+	tahunAnggaran := c.GetHeader("X-Tahun-Anggaran")
+	if tahunAnggaran == "" {
+		tahunAnggaran = "2025"
+	}
+
+	// Get latest saldo bendahara for this year
 	var latestSaldo models.SaldoBendahara
 	var saldoBank float64 = 0
 	var saldoTunai float64 = 0
 
-	if err := DB.Order("tanggal desc").First(&latestSaldo).Error; err == nil {
+	if err := DB.Where("tahun_anggaran = ?", tahunAnggaran).Order("tanggal desc").First(&latestSaldo).Error; err == nil {
 		saldoBank = latestSaldo.SaldoBank
 		saldoTunai = latestSaldo.SaldoTunai
 	}
 
-	// Add top up to saldo bank
+	// Add top up to saldo bank (filtered by year)
 	var totalTopUp float64
-	DB.Model(&models.TopUpSaldo{}).Select("COALESCE(SUM(jumlah), 0)").Scan(&totalTopUp)
+	DB.Model(&models.TopUpSaldo{}).Where("tahun_anggaran = ?", tahunAnggaran).Select("COALESCE(SUM(jumlah), 0)").Scan(&totalTopUp)
 	saldoBank += totalTopUp
 
-	// Subtract penarikan tunai from bank, add to tunai
+	// Subtract penarikan tunai from bank, add to tunai (filtered by year)
 	var totalPenarikan float64
-	DB.Model(&models.PenarikanTunai{}).Select("COALESCE(SUM(jumlah), 0)").Scan(&totalPenarikan)
+	DB.Model(&models.PenarikanTunai{}).Where("tahun_anggaran = ?", tahunAnggaran).Select("COALESCE(SUM(jumlah), 0)").Scan(&totalPenarikan)
 	saldoBank -= totalPenarikan
 	saldoTunai += totalPenarikan
 
-	// Subtract pelimpahan from respective sources
+	// Subtract pelimpahan from respective sources (filtered by year via join)
 	var totalPelimpahanBank float64
-	DB.Model(&models.PelimpahanDetail{}).Where("sumber_dana = ?", "bank").Select("COALESCE(SUM(jumlah), 0)").Scan(&totalPelimpahanBank)
+	DB.Model(&models.PelimpahanDetail{}).
+		Joins("JOIN pelimpahans ON pelimpahans.id = pelimpahan_details.pelimpahan_id").
+		Where("pelimpahans.tahun_anggaran = ?", tahunAnggaran).
+		Where("pelimpahan_details.sumber_dana = ?", "bank").
+		Select("COALESCE(SUM(pelimpahan_details.jumlah), 0)").Scan(&totalPelimpahanBank)
 	saldoBank -= totalPelimpahanBank
 
 	var totalPelimpahanTunai float64
-	DB.Model(&models.PelimpahanDetail{}).Where("sumber_dana = ?", "tunai").Select("COALESCE(SUM(jumlah), 0)").Scan(&totalPelimpahanTunai)
+	DB.Model(&models.PelimpahanDetail{}).
+		Joins("JOIN pelimpahans ON pelimpahans.id = pelimpahan_details.pelimpahan_id").
+		Where("pelimpahans.tahun_anggaran = ?", tahunAnggaran).
+		Where("pelimpahan_details.sumber_dana = ?", "tunai").
+		Select("COALESCE(SUM(pelimpahan_details.jumlah), 0)").Scan(&totalPelimpahanTunai)
 	saldoTunai -= totalPelimpahanTunai
 
 	c.JSON(http.StatusOK, gin.H{

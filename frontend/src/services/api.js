@@ -16,6 +16,13 @@ api.interceptors.request.use(
     if (token) {
       config.headers.Authorization = `Bearer ${token}`
     }
+    
+    // Add tahun anggaran header
+    const selectedYear = localStorage.getItem('selectedYear')
+    if (selectedYear) {
+      config.headers['X-Tahun-Anggaran'] = selectedYear
+    }
+    
     return config
   },
   error => {

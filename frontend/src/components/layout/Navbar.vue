@@ -26,8 +26,8 @@
           class="flex items-center gap-2 p-2 rounded-lg hover:bg-secondary-100 transition-colors"
         >
           <!-- Avatar with image or initials -->
-          <div v-if="authStore.user?.avatar" class="w-8 h-8 rounded-full overflow-hidden">
-            <img :src="authStore.user.avatar" alt="Avatar" class="w-full h-full object-cover" />
+          <div v-if="avatarUrl" class="w-8 h-8 rounded-full overflow-hidden">
+            <img :src="avatarUrl" alt="Avatar" class="w-full h-full object-cover" />
           </div>
           <div v-else class="w-8 h-8 rounded-full bg-gradient-to-br from-primary-400 to-primary-600 flex items-center justify-center text-white font-semibold text-sm">
             {{ authStore.user?.name?.charAt(0).toUpperCase() || 'U' }}
@@ -84,6 +84,19 @@ const authStore = useAuthStore()
 
 const showDropdown = ref(false)
 const dropdownRef = ref(null)
+
+// API Base URL for images
+const apiBaseUrl = import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:8000'
+
+// Helper to resolve image URLs (handles relative and absolute)
+function resolveImageUrl(url) {
+  if (!url) return ''
+  if (url.startsWith('http')) return url
+  return apiBaseUrl + url
+}
+
+// Computed avatar URL
+const avatarUrl = computed(() => resolveImageUrl(authStore.user?.avatar))
 
 // Close dropdown when clicking outside
 onClickOutside(dropdownRef, () => {

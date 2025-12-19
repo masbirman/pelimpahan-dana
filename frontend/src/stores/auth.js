@@ -5,6 +5,7 @@ import api from '@/services/api'
 export const useAuthStore = defineStore('auth', () => {
   const user = ref(null)
   const token = ref(localStorage.getItem('token') || null)
+  const selectedYear = ref(localStorage.getItem('selectedYear') || '2025')
   const loading = ref(false)
 
   const isAuthenticated = computed(() => !!token.value && !!user.value)
@@ -13,15 +14,30 @@ export const useAuthStore = defineStore('auth', () => {
   const isBendahara = computed(() => user.value?.role === 'bendahara')
   const isOperator = computed(() => user.value?.role === 'operator')
 
-  async function login(email, password) {
+  async function login(username, password, tahunAnggaran = '2025', turnstileToken = '') {
     loading.value = true
     try {
-      const response = await api.post('/login', { email, password })
+      const payload = { 
+        username, 
+        password,
+        tahun_anggaran: tahunAnggaran
+      }
+      
+      // Add turnstile token if provided (for production)
+      if (turnstileToken) {
+        payload.turnstile_token = turnstileToken
+      }
+      
+      const response = await api.post('/login', payload)
       if (response.data.success) {
         token.value = response.data.data.token
         user.value = response.data.data.user
+        selectedYear.value = tahunAnggaran
+        
         localStorage.setItem('token', token.value)
+        localStorage.setItem('selectedYear', tahunAnggaran)
         api.defaults.headers.common['Authorization'] = `Bearer ${token.value}`
+        
         return { success: true }
       }
       return { success: false, message: response.data.message }
@@ -43,7 +59,9 @@ export const useAuthStore = defineStore('auth', () => {
     } finally {
       token.value = null
       user.value = null
+      selectedYear.value = '2025'
       localStorage.removeItem('token')
+      localStorage.removeItem('selectedYear')
       delete api.defaults.headers.common['Authorization']
     }
   }
@@ -81,9 +99,15 @@ export const useAuthStore = defineStore('auth', () => {
     return roles.includes(user.value?.role)
   }
 
+  function setYear(year) {
+    selectedYear.value = year
+    localStorage.setItem('selectedYear', year)
+  }
+
   return {
     user,
     token,
+    selectedYear,
     loading,
     isAuthenticated,
     isSuperAdmin,
@@ -93,6 +117,7 @@ export const useAuthStore = defineStore('auth', () => {
     logout,
     checkAuth,
     hasRole,
-    hasAnyRole
+    hasAnyRole,
+    setYear
   }
 })
