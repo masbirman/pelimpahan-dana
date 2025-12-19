@@ -4,7 +4,7 @@
       <!-- Left Side: Illustration -->
       <div class="hidden lg:flex items-center justify-center">
         <img 
-          src="http://localhost:8000/uploads/login.webp" 
+          :src="illustrationUrl" 
           alt="Login Illustration" 
           class="w-full max-w-lg object-contain"
         />
@@ -16,10 +16,16 @@
         <div class="text-center mb-8">
           <div class="inline-flex items-center justify-center w-24 h-24 mb-4">
             <img 
-              src="http://localhost:8000/uploads/logo_20251218171038.png" 
+              v-if="logoUrl"
+              :src="logoUrl" 
               alt="Logo" 
               class="w-full h-full object-contain"
             />
+            <div v-else class="w-full h-full rounded-2xl bg-gradient-to-br from-primary-500 to-primary-700 flex items-center justify-center">
+              <svg class="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
           </div>
           <h1 class="text-3xl font-bold text-secondary-900 mb-2">{{ branding.app_name }}</h1>
           <p class="text-secondary-600">{{ branding.app_subtitle }}</p>
@@ -114,7 +120,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import api from '@/services/api'
@@ -135,6 +141,22 @@ const branding = ref({
   app_subtitle: 'Dana UP/GU',
   logo_url: ''
 })
+
+// API Base URL for images
+const apiBaseUrl = import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:8000'
+
+// Helper to resolve image URLs (handles relative and absolute)
+function resolveImageUrl(url) {
+  if (!url) return ''
+  if (url.startsWith('http')) return url
+  return apiBaseUrl + url
+}
+
+// Computed logo URL from branding settings
+const logoUrl = computed(() => resolveImageUrl(branding.value.logo_url))
+
+// Illustration URL
+const illustrationUrl = computed(() => apiBaseUrl + '/uploads/ilustrasi-dashboard.webp')
 
 onMounted(async () => {
   try {
