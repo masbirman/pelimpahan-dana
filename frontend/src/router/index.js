@@ -67,6 +67,11 @@ const routes = [
         component: () => import('@/views/pelimpahan/Create.vue')
       },
       {
+        path: 'pelimpahan/print',
+        name: 'PrintPelimpahan',
+        component: () => import('@/views/pelimpahan/ListReport.vue')
+      },
+      {
         path: 'pelimpahan/:id',
         name: 'ViewPelimpahan',
         component: () => import('@/views/pelimpahan/Report.vue')

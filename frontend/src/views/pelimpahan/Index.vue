@@ -7,6 +7,12 @@
         <p class="text-secondary-500">Daftar semua pelimpahan dana</p>
       </div>
       <div class="flex gap-3">
+        <button @click="printPDF" class="btn-secondary">
+          <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+          </svg>
+          Cetak PDF
+        </button>
         <button @click="exportExcel" class="btn-secondary">
           <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
@@ -279,6 +285,17 @@ async function deleteItem() {
 
 function exportExcel() {
   notificationStore.info('Fitur export sedang dalam pengembangan')
+}
+
+function printPDF() {
+  const params = new URLSearchParams()
+  if (filters.month) params.set('month', filters.month)
+  if (filters.sumber_dana) params.set('sumber_dana', filters.sumber_dana)
+  if (filters.jenis_pelimpahan_id) params.set('jenis_pelimpahan_id', filters.jenis_pelimpahan_id)
+  
+  const queryString = params.toString()
+  const url = queryString ? `/pelimpahan/print?${queryString}` : '/pelimpahan/print'
+  window.open(url, '_blank')
 }
 
 function formatCurrency(value) {
