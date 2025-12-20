@@ -256,7 +256,8 @@ async function loadPelimpahan() {
         unit_id: d.unit_id,
         nama_penerima: d.nama_penerima,
         nomor_rekening: d.nomor_rekening,
-        jumlah: d.jumlah
+        jumlah: d.jumlah,
+        sumber_dana: d.sumber_dana || 'bank'
       }))
       nomorPelimpahan.value = data.nomor_pelimpahan
     }
