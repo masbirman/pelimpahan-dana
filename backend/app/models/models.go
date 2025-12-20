@@ -22,7 +22,9 @@ type Unit struct {
 	KodeUnit      string    `gorm:"type:varchar(50);unique;not null" json:"kode_unit"`
 	NamaUnit      string    `gorm:"type:varchar(255);not null" json:"nama_unit"`
 	NamaPimpinan  string    `gorm:"type:varchar(255)" json:"nama_pimpinan"`
+	NIPPimpinan   string    `gorm:"type:varchar(50)" json:"nip_pimpinan"`
 	NamaBendahara string    `gorm:"type:varchar(255);not null" json:"nama_bendahara"`
+	NIPBendahara  string    `gorm:"type:varchar(50)" json:"nip_bendahara"`
 	NomorRekening string    `gorm:"type:varchar(50);not null" json:"nomor_rekening"`
 	CreatedAt     time.Time `json:"created_at"`
 	UpdatedAt     time.Time `json:"updated_at"`

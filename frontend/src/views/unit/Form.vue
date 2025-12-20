@@ -27,9 +27,15 @@
           </div>
         </div>
 
-        <div>
-          <label class="label">Nama Pimpinan</label>
-          <input v-model="form.nama_pimpinan" type="text" class="input" placeholder="Kepala Dinas" />
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <label class="label">Nama Pimpinan</label>
+            <input v-model="form.nama_pimpinan" type="text" class="input" placeholder="Kepala Dinas / Kepala Sekolah" />
+          </div>
+          <div>
+            <label class="label">NIP Pimpinan</label>
+            <input v-model="form.nip_pimpinan" type="text" class="input" placeholder="19XXXXXXXX XXXXXX X XXX" />
+          </div>
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -38,9 +44,14 @@
             <input v-model="form.nama_bendahara" type="text" class="input" placeholder="Bendahara Dinas" required />
           </div>
           <div>
-            <label class="label">Nomor Rekening <span class="text-red-500">*</span></label>
-            <input v-model="form.nomor_rekening" type="text" class="input" placeholder="1234567890" required />
+            <label class="label">NIP Bendahara</label>
+            <input v-model="form.nip_bendahara" type="text" class="input" placeholder="19XXXXXXXX XXXXXX X XXX" />
           </div>
+        </div>
+
+        <div>
+          <label class="label">Nomor Rekening <span class="text-red-500">*</span></label>
+          <input v-model="form.nomor_rekening" type="text" class="input" placeholder="1234567890" required />
         </div>
 
         <div class="flex justify-end gap-3 pt-4 border-t border-secondary-200">
@@ -75,7 +86,9 @@ const form = reactive({
   kode_unit: '',
   nama_unit: '',
   nama_pimpinan: '',
+  nip_pimpinan: '',
   nama_bendahara: '',
+  nip_bendahara: '',
   nomor_rekening: ''
 })
 

@@ -81,6 +81,27 @@ const routes = [
         name: 'EditPelimpahan',
         component: () => import('@/views/pelimpahan/Create.vue')
       },
+      // Laporan
+      {
+        path: 'laporan',
+        name: 'Laporan',
+        component: () => import('@/views/laporan/Index.vue')
+      },
+      {
+        path: 'laporan/per-unit',
+        name: 'LaporanPerUnit',
+        component: () => import('@/views/laporan/PerUnit.vue')
+      },
+      {
+        path: 'laporan/per-periode',
+        name: 'LaporanPerPeriode',
+        component: () => import('@/views/laporan/PerPeriode.vue')
+      },
+      {
+        path: 'laporan/per-jenis',
+        name: 'LaporanPerJenis',
+        component: () => import('@/views/laporan/PerJenis.vue')
+      },
       // Saldo Bendahara (Bendahara & Super Admin)
       {
         path: 'saldo-bendahara',
