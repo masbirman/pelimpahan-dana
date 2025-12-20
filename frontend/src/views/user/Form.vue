@@ -22,8 +22,8 @@
         </div>
 
         <div>
-          <label class="label">Email <span class="text-red-500">*</span></label>
-          <input v-model="form.email" type="email" class="input" placeholder="email@example.com" required />
+          <label class="label">Username <span class="text-red-500">*</span></label>
+          <input v-model="form.username" type="text" class="input" placeholder="username" required />
         </div>
 
         <div>
@@ -84,7 +84,7 @@ const isEdit = computed(() => !!route.params.id)
 
 const form = reactive({
   name: '',
-  email: '',
+  username: '',
   password: '',
   role: '',
   is_active: true
@@ -97,7 +97,7 @@ onMounted(async () => {
       if (response.data.success) {
         const data = response.data.data
         form.name = data.name
-        form.email = data.email
+        form.username = data.username
         form.role = data.role
         form.is_active = data.is_active
       }

@@ -21,7 +21,7 @@
           <thead class="bg-secondary-50">
             <tr>
               <th class="px-6 py-4 table-header">User</th>
-              <th class="px-6 py-4 table-header">Email</th>
+              <th class="px-6 py-4 table-header">Username</th>
               <th class="px-6 py-4 table-header">Role</th>
               <th class="px-6 py-4 table-header">Status</th>
               <th class="px-6 py-4 table-header text-right">Aksi</th>
@@ -31,13 +31,16 @@
             <tr v-for="user in users" :key="user.id" class="hover:bg-secondary-50 transition-colors">
               <td class="px-6 py-4">
                 <div class="flex items-center gap-3">
-                  <div class="w-10 h-10 rounded-full bg-gradient-to-br from-primary-400 to-primary-600 flex items-center justify-center text-white font-semibold">
+                  <div v-if="user.avatar" class="w-10 h-10 rounded-full overflow-hidden">
+                    <img :src="getAvatarUrl(user.avatar)" class="w-full h-full object-cover" />
+                  </div>
+                  <div v-else class="w-10 h-10 rounded-full bg-gradient-to-br from-primary-400 to-primary-600 flex items-center justify-center text-white font-semibold">
                     {{ user.name?.charAt(0).toUpperCase() }}
                   </div>
                   <span class="text-sm font-medium text-secondary-900">{{ user.name }}</span>
                 </div>
               </td>
-              <td class="px-6 py-4 text-sm text-secondary-700">{{ user.email }}</td>
+              <td class="px-6 py-4 text-sm text-secondary-700">{{ user.username }}</td>
               <td class="px-6 py-4">
                 <span :class="getRoleBadgeClass(user.role)">{{ getRoleLabel(user.role) }}</span>
               </td>
@@ -100,6 +103,14 @@ const users = ref([])
 const loading = ref(false)
 const showDeleteModal = ref(false)
 const selectedUser = ref(null)
+
+const apiBaseUrl = import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:8000'
+
+function getAvatarUrl(avatar) {
+  if (!avatar) return ''
+  if (avatar.startsWith('http')) return avatar
+  return apiBaseUrl + avatar
+}
 
 onMounted(() => {
   loadUsers()
