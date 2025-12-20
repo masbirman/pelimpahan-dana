@@ -944,6 +944,16 @@ func GetPelimpahan(c *gin.Context) {
 		query = query.Where("jenis_pelimpahan_id = ?", jenisID)
 	}
 
+	// Month filter (1-12)
+	if month := c.Query("month"); month != "" {
+		query = query.Where("EXTRACT(MONTH FROM tanggal_pelimpahan) = ?", month)
+	}
+
+	// Sumber dana filter (bank/tunai)
+	if sumberDana := c.Query("sumber_dana"); sumberDana != "" && sumberDana != "all" {
+		query = query.Where("sumber_dana = ?", sumberDana)
+	}
+
 	// Year-based filtering
 	tahunAnggaran := c.GetHeader("X-Tahun-Anggaran")
 	if tahunAnggaran == "" {

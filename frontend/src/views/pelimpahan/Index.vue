@@ -34,6 +34,30 @@
             @input="debouncedSearch"
           />
         </div>
+        <div class="w-40">
+          <select v-model="filters.month" class="input" @change="loadData">
+            <option value="">Semua Bulan</option>
+            <option value="1">Januari</option>
+            <option value="2">Februari</option>
+            <option value="3">Maret</option>
+            <option value="4">April</option>
+            <option value="5">Mei</option>
+            <option value="6">Juni</option>
+            <option value="7">Juli</option>
+            <option value="8">Agustus</option>
+            <option value="9">September</option>
+            <option value="10">Oktober</option>
+            <option value="11">November</option>
+            <option value="12">Desember</option>
+          </select>
+        </div>
+        <div class="w-40">
+          <select v-model="filters.sumber_dana" class="input" @change="loadData">
+            <option value="">Semua Sumber</option>
+            <option value="bank">Bank</option>
+            <option value="tunai">Tunai</option>
+          </select>
+        </div>
         <div class="w-48">
           <select v-model="filters.jenis_pelimpahan_id" class="input" @change="loadData">
             <option value="">Semua Jenis</option>
@@ -183,7 +207,7 @@ const pelimpahanList = ref([])
 const jenisList = ref([])
 const loading = ref(false)
 const meta = ref({ page: 1, per_page: 10, total: 0, last_page: 1 })
-const filters = reactive({ search: '', jenis_pelimpahan_id: '' })
+const filters = reactive({ search: '', jenis_pelimpahan_id: '', month: '', sumber_dana: '' })
 const showDeleteModal = ref(false)
 const selectedItem = ref(null)
 
@@ -211,7 +235,9 @@ async function loadData() {
         page: meta.value.page,
         per_page: meta.value.per_page,
         search: filters.search,
-        jenis_pelimpahan_id: filters.jenis_pelimpahan_id
+        jenis_pelimpahan_id: filters.jenis_pelimpahan_id,
+        month: filters.month,
+        sumber_dana: filters.sumber_dana
       }
     })
     if (response.data.success) {
