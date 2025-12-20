@@ -10,7 +10,7 @@
             <div class="space-y-4 min-w-0">
               <!-- Greeting -->
               <div>
-                <h2 class="text-2xl font-bold text-primary-800 whitespace-nowrap" style="min-height: 2rem;">
+                <h2 class="text-lg md:text-2xl font-bold text-primary-800 whitespace-nowrap" style="min-height: 2rem;">
                   <span class="typing-text">{{ displayedGreeting }}</span>
                   <span v-if="!typingComplete" class="typing-cursor">|</span>
                 </h2>
@@ -27,22 +27,22 @@
               <div v-if="countdown.active" class="p-4 bg-gradient-to-r from-primary-50 to-blue-50 rounded-xl border border-primary-100">
                 <p class="text-sm font-medium text-primary-700">{{ countdown.title }}</p>
                 <p class="text-xs text-secondary-500 mt-1 mb-3">{{ countdown.description }}</p>
-                <div class="flex gap-2">
-                  <div class="bg-white px-3 py-2 rounded-lg shadow-sm text-center flex-1">
-                    <p class="text-xl font-bold text-primary-700">{{ countdownDisplay.days }}</p>
-                    <p class="text-xs text-secondary-500">Hari</p>
+                <div class="grid grid-cols-4 gap-2">
+                  <div class="bg-white px-2 py-2 rounded-lg shadow-sm text-center">
+                    <p class="text-lg md:text-xl font-bold text-primary-700">{{ countdownDisplay.days }}</p>
+                    <p class="text-[10px] md:text-xs text-secondary-500">Hari</p>
                   </div>
-                  <div class="bg-white px-3 py-2 rounded-lg shadow-sm text-center flex-1">
-                    <p class="text-xl font-bold text-primary-700">{{ countdownDisplay.hours }}</p>
-                    <p class="text-xs text-secondary-500">Jam</p>
+                  <div class="bg-white px-2 py-2 rounded-lg shadow-sm text-center">
+                    <p class="text-lg md:text-xl font-bold text-primary-700">{{ countdownDisplay.hours }}</p>
+                    <p class="text-[10px] md:text-xs text-secondary-500">Jam</p>
                   </div>
-                  <div class="bg-white px-3 py-2 rounded-lg shadow-sm text-center flex-1">
-                    <p class="text-xl font-bold text-primary-700">{{ countdownDisplay.minutes }}</p>
-                    <p class="text-xs text-secondary-500">Menit</p>
+                  <div class="bg-white px-2 py-2 rounded-lg shadow-sm text-center">
+                    <p class="text-lg md:text-xl font-bold text-primary-700">{{ countdownDisplay.minutes }}</p>
+                    <p class="text-[10px] md:text-xs text-secondary-500">Menit</p>
                   </div>
-                  <div class="bg-white px-3 py-2 rounded-lg shadow-sm text-center flex-1">
-                    <p class="text-xl font-bold text-primary-700">{{ countdownDisplay.seconds }}</p>
-                    <p class="text-xs text-secondary-500">Detik</p>
+                  <div class="bg-white px-2 py-2 rounded-lg shadow-sm text-center">
+                    <p class="text-lg md:text-xl font-bold text-primary-700">{{ countdownDisplay.seconds }}</p>
+                    <p class="text-[10px] md:text-xs text-secondary-500">Detik</p>
                   </div>
                 </div>
               </div>
@@ -75,8 +75,8 @@
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
                 </svg>
               </div>
-              <p class="text-xl font-bold text-blue-700">{{ stats.total_pelimpahan }}</p>
-              <p class="text-[10px] text-blue-600">Total Pelimpahan</p>
+              <p class="text-base md:text-xl font-bold text-blue-700">{{ stats.total_pelimpahan }}</p>
+              <p class="text-[10px] md:text-xs text-blue-600">Total Pelimpahan</p>
             </div>
 
             <!-- Unit Kerja -->
@@ -86,8 +86,8 @@
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
                 </svg>
               </div>
-              <p class="text-xl font-bold text-emerald-700">{{ stats.total_unit }}</p>
-              <p class="text-[10px] text-emerald-600">Unit Kerja</p>
+              <p class="text-base md:text-xl font-bold text-emerald-700">{{ stats.total_unit }}</p>
+              <p class="text-[10px] md:text-xs text-emerald-600">Unit Kerja</p>
             </div>
 
             <!-- Jenis Pelimpahan -->
@@ -97,8 +97,8 @@
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
                 </svg>
               </div>
-              <p class="text-xl font-bold text-amber-700">{{ stats.total_jenis }}</p>
-              <p class="text-[10px] text-amber-600">Jenis Pelimpahan</p>
+              <p class="text-base md:text-xl font-bold text-amber-700">{{ stats.total_jenis }}</p>
+              <p class="text-[10px] md:text-xs text-amber-600">Jenis Pelimpahan</p>
             </div>
 
             <!-- Total User -->
@@ -108,8 +108,8 @@
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
                 </svg>
               </div>
-              <p class="text-xl font-bold text-purple-700">{{ stats.total_user }}</p>
-              <p class="text-[10px] text-purple-600">Total User</p>
+              <p class="text-base md:text-xl font-bold text-purple-700">{{ stats.total_user }}</p>
+              <p class="text-[10px] md:text-xs text-purple-600">Total User</p>
             </div>
           </div>
         </div>
@@ -120,52 +120,52 @@
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
       <!-- Saldo Bendahara -->
       <div class="card">
-        <div class="card-header flex items-center justify-between">
-          <h3 class="font-semibold text-secondary-900">Saldo Bendahara</h3>
+        <div class="card-header flex items-center justify-between py-3 px-4">
+          <h3 class="font-semibold text-secondary-900 text-sm md:text-base">Saldo Bendahara</h3>
           <router-link to="/saldo-bendahara" class="text-xs text-primary-600 hover:text-primary-700">
             Detail →
           </router-link>
         </div>
-        <div class="card-body space-y-4">
+        <div class="card-body p-4 space-y-4">
           <!-- Total Saldo -->
           <div class="p-4 bg-gradient-to-br from-primary-500 to-primary-700 rounded-xl text-white">
             <div class="flex items-center gap-3">
-              <div class="w-12 h-12 rounded-xl bg-white/20 flex items-center justify-center">
-                <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div class="w-10 h-10 md:w-12 md:h-12 rounded-xl bg-white/20 flex items-center justify-center">
+                <svg class="w-5 h-5 md:w-6 md:h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
               </div>
               <div>
-                <p class="text-xs text-white/80">Total Saldo</p>
-                <p class="text-xl font-bold">{{ formatCurrency(saldo.total) }}</p>
+                <p class="text-[10px] md:text-xs text-white/80">Total Saldo</p>
+                <p class="text-lg md:text-xl font-bold">{{ formatCurrency(saldo.total) }}</p>
               </div>
             </div>
           </div>
 
           <!-- Saldo Bank & Tunai -->
-          <div class="grid grid-cols-2 gap-3">
-            <div class="p-3 bg-blue-50 rounded-xl">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div class="p-4 bg-blue-50 rounded-xl">
               <div class="flex items-center gap-2 mb-2">
                 <div class="w-8 h-8 rounded-lg bg-blue-500 flex items-center justify-center">
                   <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
                   </svg>
                 </div>
-                <span class="text-xs text-blue-600 font-medium">Saldo Bank</span>
+                <span class="text-sm text-blue-600 font-medium">Saldo Bank</span>
               </div>
-              <p class="text-lg font-bold text-blue-700">{{ formatCurrency(saldo.bank) }}</p>
+              <p class="text-xl md:text-lg font-bold text-blue-700 truncate" :title="formatCurrency(saldo.bank)">{{ formatCurrency(saldo.bank) }}</p>
             </div>
 
-            <div class="p-3 bg-emerald-50 rounded-xl">
+            <div class="p-4 bg-emerald-50 rounded-xl">
               <div class="flex items-center gap-2 mb-2">
                 <div class="w-8 h-8 rounded-lg bg-emerald-500 flex items-center justify-center">
                   <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
                   </svg>
                 </div>
-                <span class="text-xs text-emerald-600 font-medium">Saldo Tunai</span>
+                <span class="text-sm text-emerald-600 font-medium">Saldo Tunai</span>
               </div>
-              <p class="text-lg font-bold text-emerald-700">{{ formatCurrency(saldo.tunai) }}</p>
+              <p class="text-xl md:text-lg font-bold text-emerald-700 truncate" :title="formatCurrency(saldo.tunai)">{{ formatCurrency(saldo.tunai) }}</p>
             </div>
           </div>
 

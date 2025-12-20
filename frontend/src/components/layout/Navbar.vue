@@ -1,10 +1,20 @@
 <template>
-  <header class="h-16 bg-white border-b border-secondary-200 flex items-center justify-between px-6">
+  <header class="h-16 bg-white border-b border-secondary-200 flex items-center justify-between px-4 md:px-6">
     <!-- Left side -->
     <div class="flex items-center gap-4">
+      <!-- Mobile hamburger menu -->
+      <button
+        @click="$emit('toggle-mobile-menu')"
+        class="lg:hidden p-2 rounded-lg hover:bg-secondary-100 transition-colors"
+      >
+        <svg class="w-5 h-5 text-secondary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+        </svg>
+      </button>
+      <!-- Desktop sidebar toggle -->
       <button
         @click="$emit('toggle-sidebar')"
-        class="p-2 rounded-lg hover:bg-secondary-100 transition-colors"
+        class="hidden lg:block p-2 rounded-lg hover:bg-secondary-100 transition-colors"
       >
         <svg class="w-5 h-5 text-secondary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
@@ -13,9 +23,9 @@
     </div>
 
     <!-- Right side -->
-    <div class="flex items-center gap-4">
-      <!-- Role badge -->
-      <span :class="roleBadgeClass">
+    <div class="flex items-center gap-2 md:gap-4">
+      <!-- Role badge - hidden on mobile -->
+      <span :class="[roleBadgeClass, 'hidden md:inline-flex']">
         {{ roleLabel }}
       </span>
 
@@ -81,6 +91,8 @@ import { onClickOutside } from '@vueuse/core'
 
 const router = useRouter()
 const authStore = useAuthStore()
+
+defineEmits(['toggle-sidebar', 'toggle-mobile-menu'])
 
 const showDropdown = ref(false)
 const dropdownRef = ref(null)

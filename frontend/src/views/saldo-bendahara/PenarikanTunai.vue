@@ -1,12 +1,12 @@
 <template>
   <div class="space-y-6 animate-fadeIn">
     <!-- Header -->
-    <div class="flex items-center justify-between">
+    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
       <div>
         <h1 class="text-2xl font-bold text-secondary-900">Penarikan Tunai</h1>
-        <p class="text-secondary-500">Transfer saldo dari Bank ke Tunai</p>
+        <p class="text-secondary-500 text-sm md:text-base">Transfer saldo dari Bank ke Tunai</p>
       </div>
-      <button @click="openForm" class="btn-primary">
+      <button @click="openForm" class="btn-primary w-full md:w-auto justify-center">
         <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
         </svg>
@@ -17,14 +17,14 @@
     <!-- Saldo Info -->
     <div class="card bg-gradient-to-r from-blue-50 to-emerald-50">
       <div class="card-body">
-        <div class="grid grid-cols-2 gap-4">
-          <div>
-            <p class="text-sm text-secondary-600">Saldo Bank Tersedia</p>
-            <p class="text-2xl font-bold text-blue-700">{{ formatCurrency(saldoBank) }}</p>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div class="p-2 md:p-0 bg-white/50 md:bg-transparent rounded-lg">
+            <p class="text-sm text-secondary-600 font-medium">Saldo Bank Tersedia</p>
+            <p class="text-xl md:text-2xl font-bold text-blue-700 truncate" :title="formatCurrency(saldoBank)">{{ formatCurrency(saldoBank) }}</p>
           </div>
-          <div>
-            <p class="text-sm text-secondary-600">Saldo Tunai</p>
-            <p class="text-2xl font-bold text-emerald-700">{{ formatCurrency(saldoTunai) }}</p>
+          <div class="p-2 md:p-0 bg-white/50 md:bg-transparent rounded-lg">
+            <p class="text-sm text-secondary-600 font-medium">Saldo Tunai</p>
+            <p class="text-xl md:text-2xl font-bold text-emerald-700 truncate" :title="formatCurrency(saldoTunai)">{{ formatCurrency(saldoTunai) }}</p>
           </div>
         </div>
       </div>
@@ -38,7 +38,7 @@
             <input
               v-model="searchQuery"
               type="text"
-              class="input"
+              class="input text-sm"
               placeholder="Cari berdasarkan keterangan..."
             />
           </div>
@@ -46,8 +46,46 @@
       </div>
     </div>
 
-    <!-- Table -->
-    <div class="card">
+    <!-- Mobile Card View -->
+    <div class="md:hidden space-y-3">
+      <div v-if="loading" class="text-center py-8 text-secondary-500 text-sm">Memuat data...</div>
+      <div v-else-if="!penarikanList.length" class="text-center py-8 text-secondary-500 text-sm">Belum ada data penarikan tunai</div>
+      <div v-else v-for="item in penarikanList" :key="item.id" class="card p-4 shadow-sm border border-secondary-100">
+        <div class="flex justify-between items-start mb-3">
+          <div>
+            <span class="text-xs text-secondary-500 font-medium uppercase tracking-wide">Tanggal</span>
+            <p class="text-sm font-semibold text-secondary-900">{{ formatDate(item.tanggal) }}</p>
+          </div>
+          <div class="text-right">
+             <span class="text-xs text-secondary-500 font-medium uppercase tracking-wide">Jumlah</span>
+             <p class="text-base font-bold text-orange-600">{{ formatCurrency(item.jumlah) }}</p>
+          </div>
+        </div>
+        
+        <div class="mb-3">
+           <p class="text-xs text-secondary-500 mb-1">Keterangan</p>
+           <p class="text-sm text-secondary-800 bg-secondary-50 p-2 rounded-md">{{ item.keterangan }}</p>
+        </div>
+
+        <div class="flex justify-between items-center pt-3 border-t border-secondary-100">
+           <div class="flex items-center gap-2 text-xs text-secondary-500">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
+              {{ item.creator?.name || '-' }}
+           </div>
+           <div class="flex gap-2">
+             <button @click="editItem(item)" class="p-1.5 text-primary-600 hover:bg-primary-50 rounded-md bg-primary-50/50">
+               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
+             </button>
+             <button @click="confirmDelete(item)" class="p-1.5 text-red-600 hover:bg-red-50 rounded-md bg-red-50/50">
+               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+             </button>
+           </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Desktop Table View -->
+    <div class="card hidden md:block">
       <div class="overflow-x-auto">
         <table class="min-w-full divide-y divide-secondary-200">
           <thead class="bg-secondary-50">
@@ -107,15 +145,15 @@
 
       <!-- Pagination -->
       <div v-if="meta.total > 0" class="card-footer">
-        <div class="flex items-center justify-between">
+        <div class="flex flex-col md:flex-row items-center justify-between gap-4">
           <p class="text-sm text-secondary-700">
             Menampilkan {{ ((meta.page - 1) * meta.per_page) + 1 }} - {{ Math.min(meta.page * meta.per_page, meta.total) }} dari {{ meta.total }} data
           </p>
-          <div class="flex gap-2">
+          <div class="flex gap-2 w-full md:w-auto">
             <button
               @click="changePage(meta.page - 1)"
               :disabled="meta.page === 1"
-              class="btn-secondary text-sm"
+              class="btn-secondary text-sm flex-1 md:flex-none justify-center"
               :class="{ 'opacity-50 cursor-not-allowed': meta.page === 1 }"
             >
               Sebelumnya
@@ -123,7 +161,7 @@
             <button
               @click="changePage(meta.page + 1)"
               :disabled="meta.page === meta.last_page"
-              class="btn-secondary text-sm"
+              class="btn-secondary text-sm flex-1 md:flex-none justify-center"
               :class="{ 'opacity-50 cursor-not-allowed': meta.page === meta.last_page }"
             >
               Selanjutnya
@@ -134,15 +172,15 @@
     </div>
 
     <!-- Form Modal -->
-    <div v-if="showForm" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div class="bg-white rounded-xl shadow-xl max-w-md w-full mx-4">
-        <div class="card-header">
+    <div v-if="showForm" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div class="bg-white rounded-xl shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
+        <div class="card-header sticky top-0 bg-white z-10 border-b border-secondary-200">
           <h3 class="font-semibold text-secondary-900">{{ editMode ? 'Edit Penarikan' : 'Penarikan Tunai' }}</h3>
         </div>
-        <form @submit.prevent="handleSubmit" class="card-body space-y-4">
+        <form @submit.prevent="handleSubmit" class="p-4 space-y-4">
           <div class="bg-blue-50 rounded-lg p-4">
             <p class="text-sm text-blue-700 font-medium">Saldo Bank Tersedia</p>
-            <p class="text-2xl font-bold text-blue-900">{{ formatCurrency(saldoBank) }}</p>
+            <p class="text-xl md:text-2xl font-bold text-blue-900 truncate" :title="formatCurrency(saldoBank)">{{ formatCurrency(saldoBank) }}</p>
           </div>
 
           <div>
@@ -162,7 +200,7 @@
               placeholder="0"
               @input="calculatePreview"
             />
-            <p v-if="form.jumlah" class="mt-1 text-sm text-secondary-500">
+            <p v-if="form.jumlah" class="mt-1 text-sm text-secondary-500 font-medium">
               {{ formatCurrency(form.jumlah) }}
             </p>
             <p v-if="form.jumlah > saldoBank" class="mt-1 text-sm text-red-600">
@@ -185,23 +223,23 @@
           <!-- Preview -->
           <div v-if="form.jumlah > 0" class="bg-secondary-50 rounded-lg p-4 space-y-2">
             <p class="text-sm font-medium text-secondary-700">Preview Setelah Penarikan:</p>
-            <div class="grid grid-cols-2 gap-4">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <p class="text-xs text-secondary-600">Saldo Bank</p>
-                <p class="text-lg font-bold" :class="previewSaldoBank >= 0 ? 'text-blue-700' : 'text-red-700'">
+                <p class="text-lg font-bold truncate" :class="previewSaldoBank >= 0 ? 'text-blue-700' : 'text-red-700'">
                   {{ formatCurrency(previewSaldoBank) }}
                 </p>
               </div>
               <div>
                 <p class="text-xs text-secondary-600">Saldo Tunai</p>
-                <p class="text-lg font-bold text-emerald-700">
+                <p class="text-lg font-bold text-emerald-700 truncate">
                   {{ formatCurrency(previewSaldoTunai) }}
                 </p>
               </div>
             </div>
           </div>
 
-          <div class="flex justify-end gap-3 pt-4">
+          <div class="flex justify-end gap-3 pt-4 border-t border-secondary-200 mt-4">
             <button type="button" @click="closeForm" class="btn-secondary">Batal</button>
             <button
               type="submit"

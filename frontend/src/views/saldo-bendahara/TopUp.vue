@@ -1,12 +1,12 @@
 <template>
   <div class="space-y-6 animate-fadeIn">
     <!-- Header -->
-    <div class="flex items-center justify-between">
+    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
       <div>
         <h1 class="text-2xl font-bold text-secondary-900">Top Up Saldo Bank</h1>
-        <p class="text-secondary-500">Kelola penerimaan dana dari luar</p>
+        <p class="text-secondary-500 text-sm md:text-base">Kelola penerimaan dana dari luar</p>
       </div>
-      <button @click="showForm = true" class="btn-primary">
+      <button @click="showForm = true" class="btn-primary w-full md:w-auto justify-center">
         <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
         </svg>
@@ -22,7 +22,7 @@
             <input
               v-model="searchQuery"
               type="text"
-              class="input"
+              class="input text-sm"
               placeholder="Cari berdasarkan keterangan..."
             />
           </div>
@@ -30,8 +30,46 @@
       </div>
     </div>
 
-    <!-- Table -->
-    <div class="card">
+    <!-- Mobile Card View -->
+    <div class="md:hidden space-y-3">
+      <div v-if="loading" class="text-center py-8 text-secondary-500 text-sm">Memuat data...</div>
+      <div v-else-if="!topUpList.length" class="text-center py-8 text-secondary-500 text-sm">Belum ada data top up</div>
+      <div v-else v-for="item in topUpList" :key="item.id" class="card p-4 shadow-sm border border-secondary-100">
+        <div class="flex justify-between items-start mb-3">
+          <div>
+            <span class="text-xs text-secondary-500 font-medium uppercase tracking-wide">Tanggal</span>
+            <p class="text-sm font-semibold text-secondary-900">{{ formatDate(item.tanggal) }}</p>
+          </div>
+          <div class="text-right">
+             <span class="text-xs text-secondary-500 font-medium uppercase tracking-wide">Jumlah</span>
+             <p class="text-base font-bold text-emerald-600">{{ formatCurrency(item.jumlah) }}</p>
+          </div>
+        </div>
+        
+        <div class="mb-3">
+           <p class="text-xs text-secondary-500 mb-1">Keterangan</p>
+           <p class="text-sm text-secondary-800 bg-secondary-50 p-2 rounded-md">{{ item.keterangan }}</p>
+        </div>
+
+        <div class="flex justify-between items-center pt-3 border-t border-secondary-100">
+           <div class="flex items-center gap-2 text-xs text-secondary-500">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
+              {{ item.creator?.name || '-' }}
+           </div>
+           <div class="flex gap-2">
+             <button @click="editItem(item)" class="p-1.5 text-primary-600 hover:bg-primary-50 rounded-md bg-primary-50/50">
+               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
+             </button>
+             <button @click="confirmDelete(item)" class="p-1.5 text-red-600 hover:bg-red-50 rounded-md bg-red-50/50">
+               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+             </button>
+           </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Desktop Table View -->
+    <div class="card hidden md:block">
       <div class="overflow-x-auto">
         <table class="min-w-full divide-y divide-secondary-200">
           <thead class="bg-secondary-50">

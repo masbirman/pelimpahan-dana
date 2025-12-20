@@ -1,32 +1,32 @@
 <template>
   <div class="space-y-6 animate-fadeIn">
     <!-- Header -->
-    <div class="flex items-center justify-between flex-wrap gap-4">
+    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
       <div>
         <h1 class="text-2xl font-bold text-secondary-900">Unit Kerja</h1>
-        <p class="text-secondary-500">Kelola data unit kerja</p>
+        <p class="text-secondary-500 text-sm md:text-base">Kelola data unit kerja</p>
       </div>
-      <div class="flex flex-wrap gap-2">
-        <button @click="downloadTemplate" class="btn-secondary">
-          <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <div class="grid grid-cols-2 md:flex gap-2">
+        <button @click="downloadTemplate" class="btn-secondary text-xs md:text-sm justify-center">
+          <svg class="w-4 h-4 md:w-5 md:h-5 mr-1 md:mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
           </svg>
           Template
         </button>
-        <button @click="openImportModal" class="btn-secondary">
-          <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <button @click="openImportModal" class="btn-secondary text-xs md:text-sm justify-center">
+          <svg class="w-4 h-4 md:w-5 md:h-5 mr-1 md:mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
           </svg>
           Import
         </button>
-        <button @click="exportData" class="btn-secondary">
-          <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <button @click="exportData" class="btn-secondary text-xs md:text-sm justify-center">
+          <svg class="w-4 h-4 md:w-5 md:h-5 mr-1 md:mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
           </svg>
           Export
         </button>
-        <router-link to="/units/create" class="btn-primary">
-          <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <router-link to="/units/create" class="btn-primary text-xs md:text-sm justify-center">
+          <svg class="w-4 h-4 md:w-5 md:h-5 mr-1 md:mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
           </svg>
           Tambah
@@ -36,76 +36,145 @@
 
     <!-- Search & Bulk Actions -->
     <div class="card">
-      <div class="card-body">
-        <div class="flex items-center gap-4">
+      <div class="card-body p-3 md:p-4">
+        <div class="flex flex-col md:flex-row items-stretch md:items-center gap-3">
           <div class="flex-1">
-            <input v-model="search" type="text" class="input" placeholder="Cari unit kerja..." @input="debouncedSearch" />
+            <div class="relative">
+              <input 
+                v-model="search" 
+                type="text" 
+                class="input pl-9 text-sm" 
+                placeholder="Cari unit kerja..." 
+                @input="debouncedSearch" 
+              />
+              <svg class="w-4 h-4 text-secondary-400 absolute left-3 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+            </div>
           </div>
           <!-- Bulk Action Bar -->
-          <div v-if="selectedIds.length > 0" class="flex items-center gap-3 px-4 py-2 bg-primary-50 rounded-lg border border-primary-200">
-            <span class="text-sm text-primary-700 font-medium">{{ selectedIds.length }} dipilih</span>
-            <button @click="confirmBulkDelete" class="text-red-600 hover:text-red-800 text-sm font-medium flex items-center gap-1">
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-              </svg>
-              Hapus
-            </button>
-            <button @click="selectedIds = []" class="text-secondary-500 hover:text-secondary-700 text-sm">Batal</button>
+          <div v-if="selectedIds.length > 0" class="flex items-center justify-between gap-3 px-3 py-2 bg-primary-50 rounded-lg border border-primary-200">
+            <span class="text-xs md:text-sm text-primary-700 font-medium">{{ selectedIds.length }} dipilih</span>
+            <div class="flex gap-2">
+              <button @click="confirmBulkDelete" class="text-red-600 hover:text-red-800 text-xs md:text-sm font-medium flex items-center gap-1 bg-white px-2 py-1 rounded shadow-sm border border-red-100">
+                <svg class="w-3 h-3 md:w-4 md:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+                Hapus
+              </button>
+              <button @click="selectedIds = []" class="text-secondary-500 hover:text-secondary-700 text-xs md:text-sm px-2 py-1">Batal</button>
+            </div>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- Table -->
-    <div class="card">
+    <!-- Mobile Card View -->
+    <div class="md:hidden space-y-3">
+      <div v-if="loading" class="text-center py-8 text-secondary-500 text-sm">Memuat data...</div>
+      <div v-else-if="!units.length" class="text-center py-8 text-secondary-500 text-sm">Tidak ada data unit kerja</div>
+      <div v-else v-for="unit in units" :key="unit.id" class="card p-3 shadow-sm border border-secondary-100 relative">
+        <!-- Checkbox Absolute -->
+        <div class="absolute top-3 left-3">
+          <input type="checkbox" :checked="selectedIds.includes(unit.id)" @change="toggleSelect(unit.id)" class="rounded border-secondary-300 text-primary-600 focus:ring-primary-500 w-4 h-4" />
+        </div>
+        
+        <div class="pl-7">
+          <div class="flex justify-between items-start mb-2">
+            <div>
+              <span class="badge-primary text-[10px] px-1.5 py-0.5 mb-1 inline-block">{{ unit.kode_unit }}</span>
+              <h3 class="text-sm font-semibold text-secondary-900 leading-tight">{{ unit.nama_unit }}</h3>
+            </div>
+          </div>
+          
+          <div class="space-y-1.5 mb-3">
+            <div class="flex items-start gap-2">
+              <svg class="w-3.5 h-3.5 text-secondary-400 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
+              <div>
+                <p class="text-[10px] text-secondary-500">Pimpinan</p>
+                <p class="text-xs text-secondary-700 font-medium">{{ unit.nama_pimpinan || '-' }}</p>
+              </div>
+            </div>
+            <div class="flex items-start gap-2">
+              <svg class="w-3.5 h-3.5 text-secondary-400 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" /></svg>
+              <div>
+                <p class="text-[10px] text-secondary-500">Bendahara</p>
+                <p class="text-xs text-secondary-700 font-medium">{{ unit.nama_bendahara }}</p>
+              </div>
+            </div>
+             <div class="flex items-start gap-2">
+              <svg class="w-3.5 h-3.5 text-secondary-400 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" /></svg>
+              <div>
+                <p class="text-[10px] text-secondary-500">No. Rekening</p>
+                <p class="text-xs text-secondary-700 font-mono">{{ unit.nomor_rekening }}</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="flex justify-end gap-2 pt-2 border-t border-secondary-50">
+             <router-link :to="`/units/${unit.id}/edit`" class="p-1.5 text-primary-600 hover:bg-primary-50 rounded-md bg-primary-50/30 text-xs flex items-center gap-1">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
+              Edit
+            </router-link>
+            <button @click="confirmDelete(unit)" class="p-1.5 text-red-600 hover:bg-red-50 rounded-md bg-red-50/30 text-xs flex items-center gap-1">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+              Hapus
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Desktop Table View -->
+    <div class="card hidden md:block">
       <div class="overflow-x-auto">
         <table class="w-full">
           <thead class="bg-secondary-50">
             <tr>
-              <th class="px-4 py-4 w-12">
+              <th class="px-4 py-3 w-10">
                 <input type="checkbox" :checked="isAllSelected" @change="toggleSelectAll" class="rounded border-secondary-300 text-primary-600 focus:ring-primary-500" />
               </th>
-              <th class="px-4 py-4 table-header cursor-pointer hover:bg-secondary-100" @click="setSort('kode_unit')">
+              <th class="px-4 py-3 table-header text-xs cursor-pointer hover:bg-secondary-100" @click="setSort('kode_unit')">
                 <div class="flex items-center gap-1">
                   Kode
                   <span v-if="sortBy === 'kode_unit'" class="text-primary-600">{{ sortOrder === 'asc' ? '↑' : '↓' }}</span>
                 </div>
               </th>
-              <th class="px-4 py-4 table-header cursor-pointer hover:bg-secondary-100" @click="setSort('nama_unit')">
+              <th class="px-4 py-3 table-header text-xs cursor-pointer hover:bg-secondary-100" @click="setSort('nama_unit')">
                 <div class="flex items-center gap-1">
                   Nama Unit
                   <span v-if="sortBy === 'nama_unit'" class="text-primary-600">{{ sortOrder === 'asc' ? '↑' : '↓' }}</span>
                 </div>
               </th>
-              <th class="px-4 py-4 table-header">Pimpinan</th>
-              <th class="px-4 py-4 table-header cursor-pointer hover:bg-secondary-100" @click="setSort('nama_bendahara')">
+              <th class="px-4 py-3 table-header text-xs">Pimpinan</th>
+              <th class="px-4 py-3 table-header text-xs cursor-pointer hover:bg-secondary-100" @click="setSort('nama_bendahara')">
                 <div class="flex items-center gap-1">
                   Bendahara
                   <span v-if="sortBy === 'nama_bendahara'" class="text-primary-600">{{ sortOrder === 'asc' ? '↑' : '↓' }}</span>
                 </div>
               </th>
-              <th class="px-4 py-4 table-header">No. Rekening</th>
-              <th class="px-4 py-4 table-header text-right">Aksi</th>
+              <th class="px-4 py-3 table-header text-xs">No. Rekening</th>
+              <th class="px-4 py-3 table-header text-xs text-right">Aksi</th>
             </tr>
           </thead>
           <tbody class="divide-y divide-secondary-200">
             <tr v-for="unit in units" :key="unit.id" class="hover:bg-secondary-50 transition-colors" :class="{ 'bg-primary-50': selectedIds.includes(unit.id) }">
-              <td class="px-4 py-4">
+              <td class="px-4 py-3">
                 <input type="checkbox" :checked="selectedIds.includes(unit.id)" @change="toggleSelect(unit.id)" class="rounded border-secondary-300 text-primary-600 focus:ring-primary-500" />
               </td>
-              <td class="px-4 py-4 text-sm font-medium text-secondary-900">{{ unit.kode_unit }}</td>
-              <td class="px-4 py-4 text-sm text-secondary-700">{{ unit.nama_unit }}</td>
-              <td class="px-4 py-4 text-sm text-secondary-700">{{ unit.nama_pimpinan || '-' }}</td>
-              <td class="px-4 py-4 text-sm text-secondary-700">{{ unit.nama_bendahara }}</td>
-              <td class="px-4 py-4 text-sm text-secondary-700">{{ unit.nomor_rekening }}</td>
-              <td class="px-4 py-4 text-right">
-                <div class="flex items-center justify-end gap-2">
-                  <router-link :to="`/units/${unit.id}/edit`" class="p-2 text-primary-600 hover:bg-primary-50 rounded-lg transition-colors">
+              <td class="px-4 py-3 text-sm font-medium text-secondary-900">{{ unit.kode_unit }}</td>
+              <td class="px-4 py-3 text-sm text-secondary-700">{{ unit.nama_unit }}</td>
+              <td class="px-4 py-3 text-sm text-secondary-700">{{ unit.nama_pimpinan || '-' }}</td>
+              <td class="px-4 py-3 text-sm text-secondary-700">{{ unit.nama_bendahara }}</td>
+              <td class="px-4 py-3 text-sm text-secondary-700 font-mono">{{ unit.nomor_rekening }}</td>
+              <td class="px-4 py-3 text-right">
+                <div class="flex items-center justify-end gap-1">
+                  <router-link :to="`/units/${unit.id}/edit`" class="p-1 text-primary-600 hover:bg-primary-50 rounded" title="Edit">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                     </svg>
                   </router-link>
-                  <button @click="confirmDelete(unit)" class="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors">
+                  <button @click="confirmDelete(unit)" class="p-1 text-red-600 hover:bg-red-50 rounded" title="Hapus">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                     </svg>
@@ -114,38 +183,30 @@
               </td>
             </tr>
             <tr v-if="!units.length && !loading">
-              <td colspan="7" class="px-6 py-12 text-center text-secondary-500">Tidak ada data unit kerja</td>
+              <td colspan="7" class="px-4 py-8 text-center text-secondary-500">Tidak ada data unit kerja</td>
             </tr>
           </tbody>
         </table>
       </div>
 
-      <!-- Pagination - Always Visible -->
-      <div class="px-6 py-4 border-t border-secondary-200 flex items-center justify-between">
-        <p class="text-sm text-secondary-500">
-          Menampilkan {{ meta.total === 0 ? 0 : (meta.page - 1) * meta.per_page + 1 }} - {{ Math.min(meta.page * meta.per_page, meta.total) }} dari {{ meta.total }} data
+      <!-- Pagination - Desktop -->
+      <div class="px-4 py-3 border-t border-secondary-200 flex items-center justify-between">
+        <p class="text-xs text-secondary-500">
+          {{ meta.total === 0 ? 0 : (meta.page - 1) * meta.per_page + 1 }} - {{ Math.min(meta.page * meta.per_page, meta.total) }} dari {{ meta.total }}
         </p>
-        <div class="flex items-center gap-4">
-          <select v-model="meta.per_page" @change="changePerPage" class="input py-1 px-2 text-sm w-20">
+        <div class="flex items-center gap-2">
+          <select v-model="meta.per_page" @change="changePerPage" class="input py-1 px-2 text-xs w-16">
             <option :value="10">10</option>
             <option :value="25">25</option>
             <option :value="50">50</option>
             <option :value="100">100</option>
           </select>
           <div class="flex gap-1">
-            <button @click="changePage(1)" :disabled="meta.page === 1" class="px-3 py-1 text-sm rounded border hover:bg-secondary-50 disabled:opacity-50">
-              ««
-            </button>
-            <button @click="changePage(meta.page - 1)" :disabled="meta.page === 1" class="px-3 py-1 text-sm rounded border hover:bg-secondary-50 disabled:opacity-50">
-              ‹
-            </button>
-            <span class="px-3 py-1 text-sm bg-primary-600 text-white rounded">{{ meta.page }}</span>
-            <button @click="changePage(meta.page + 1)" :disabled="meta.page >= meta.last_page" class="px-3 py-1 text-sm rounded border hover:bg-secondary-50 disabled:opacity-50">
-              ›
-            </button>
-            <button @click="changePage(meta.last_page)" :disabled="meta.page >= meta.last_page" class="px-3 py-1 text-sm rounded border hover:bg-secondary-50 disabled:opacity-50">
-              »»
-            </button>
+            <button @click="changePage(1)" :disabled="meta.page === 1" class="px-2 py-1 text-xs rounded border hover:bg-secondary-50 disabled:opacity-50">«</button>
+            <button @click="changePage(meta.page - 1)" :disabled="meta.page === 1" class="px-2 py-1 text-xs rounded border hover:bg-secondary-50 disabled:opacity-50">‹</button>
+            <span class="px-2 py-1 text-xs bg-primary-600 text-white rounded">{{ meta.page }}</span>
+            <button @click="changePage(meta.page + 1)" :disabled="meta.page >= meta.last_page" class="px-2 py-1 text-xs rounded border hover:bg-secondary-50 disabled:opacity-50">›</button>
+            <button @click="changePage(meta.last_page)" :disabled="meta.page >= meta.last_page" class="px-2 py-1 text-xs rounded border hover:bg-secondary-50 disabled:opacity-50">»</button>
           </div>
         </div>
       </div>

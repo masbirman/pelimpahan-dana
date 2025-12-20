@@ -116,6 +116,7 @@ func main() {
 			{
 				saldoBendahara.GET("/saldo-bendahara", controllers.GetSaldoBendahara)
 				saldoBendahara.GET("/saldo-bendahara/latest", controllers.GetLatestSaldo)
+				saldoBendahara.GET("/saldo-bendahara/by-month", controllers.GetSaldoByMonth)
 				saldoBendahara.GET("/saldo-bendahara/:id", controllers.GetSaldoBendaharaByID)
 				saldoBendahara.POST("/saldo-bendahara", controllers.CreateSaldoBendahara)
 				saldoBendahara.PUT("/saldo-bendahara/:id", controllers.UpdateSaldoBendahara)

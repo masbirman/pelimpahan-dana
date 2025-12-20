@@ -7,7 +7,7 @@
     </div>
 
     <!-- Report Cards Grid -->
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
       <!-- Laporan per Unit -->
       <router-link to="/laporan/per-unit" class="card hover:shadow-lg transition-shadow group">
         <div class="card-body text-center py-8">
@@ -44,6 +44,19 @@
           </div>
           <h3 class="text-lg font-semibold text-secondary-900 mb-2">Laporan per Jenis</h3>
           <p class="text-sm text-secondary-500">Rekap pelimpahan berdasarkan jenis (UP, TUP, LS)</p>
+        </div>
+      </router-link>
+
+      <!-- Laporan Saldo -->
+      <router-link to="/laporan/saldo" class="card hover:shadow-lg transition-shadow group">
+        <div class="card-body text-center py-8">
+          <div class="w-16 h-16 mx-auto mb-4 rounded-2xl bg-amber-100 flex items-center justify-center group-hover:scale-110 transition-transform">
+            <svg class="w-8 h-8 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+          <h3 class="text-lg font-semibold text-secondary-900 mb-2">Laporan Saldo</h3>
+          <p class="text-sm text-secondary-500">Rekap saldo bendahara per bulan</p>
         </div>
       </router-link>
     </div>

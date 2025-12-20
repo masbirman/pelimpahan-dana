@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -983,31 +984,55 @@ func GetPelimpahan(c *gin.Context) {
 	offset := (page - 1) * perPage
 	query.Offset(offset).Limit(perPage).Order("created_at desc").Find(&pelimpahanList)
 
-	// Get latest saldo bendahara
+	// Get latest saldo bendahara (base saldo)
 	var latestSaldo models.SaldoBendahara
-	var saldoAwal float64 = 0
-	var saldoBank float64 = 0
-	var saldoTunai float64 = 0
+	var baseSaldoBank float64 = 0
+	var baseSaldoTunai float64 = 0
 	if err := DB.Order("tanggal desc").First(&latestSaldo).Error; err == nil {
-		saldoBank = latestSaldo.SaldoBank
-		saldoTunai = latestSaldo.SaldoTunai
-		saldoAwal = saldoBank + saldoTunai
+		baseSaldoBank = latestSaldo.SaldoBank
+		baseSaldoTunai = latestSaldo.SaldoTunai
 	}
 
-	// Get ALL pelimpahan ordered by nomor_pelimpahan ASC to calculate cumulative sisa saldo
+	// Get ALL pelimpahan ordered by tanggal_pelimpahan ASC, then nomor_pelimpahan ASC
 	var allPelimpahan []models.Pelimpahan
-	DB.Model(&models.Pelimpahan{}).Preload("Details").Order("nomor_pelimpahan asc").Find(&allPelimpahan)
+	DB.Model(&models.Pelimpahan{}).Preload("Details").Order("tanggal_pelimpahan asc, nomor_pelimpahan asc").Find(&allPelimpahan)
 
-	// Build map of cumulative sisa saldo for each pelimpahan
+	// Build map of cumulative sisa saldo for each pelimpahan (chronologically)
 	sisaSaldoMap := make(map[uint]float64)
-	runningBalance := saldoBank + saldoTunai
+	saldoAwalMap := make(map[uint]float64)
+
 	for _, p := range allPelimpahan {
-		var totalPelimpahan float64 = 0
-		for _, detail := range p.Details {
-			totalPelimpahan += detail.Jumlah
+		// Calculate top up sum up to this pelimpahan date
+		var topUpUntilDate float64
+		DB.Model(&models.TopUpSaldo{}).Where("tanggal <= ?", p.TanggalPelimpahan).Select("COALESCE(SUM(jumlah), 0)").Scan(&topUpUntilDate)
+
+		// Calculate penarikan tunai sum up to this pelimpahan date (moves from bank to tunai, net 0 on total)
+		// Note: Penarikan doesn't affect total saldo, only the bank/tunai split
+
+		// Calculate total pelimpahan from all earlier pelimpahan (by date/nomor order)
+		var pelimpahanBefore float64 = 0
+		for _, prev := range allPelimpahan {
+			if prev.TanggalPelimpahan.Before(p.TanggalPelimpahan) ||
+				(prev.TanggalPelimpahan.Equal(p.TanggalPelimpahan) && prev.NomorPelimpahan < p.NomorPelimpahan) {
+				for _, detail := range prev.Details {
+					pelimpahanBefore += detail.Jumlah
+				}
+			}
 		}
-		runningBalance -= totalPelimpahan
-		sisaSaldoMap[p.ID] = runningBalance
+
+		// Current pelimpahan amount
+		var currentPelimpahan float64 = 0
+		for _, detail := range p.Details {
+			currentPelimpahan += detail.Jumlah
+		}
+
+		// Saldo awal = base saldo + top up until this date
+		saldoAwal := baseSaldoBank + baseSaldoTunai + topUpUntilDate
+		saldoAwalMap[p.ID] = saldoAwal
+
+		// Sisa saldo = saldo awal - pelimpahan before - current pelimpahan
+		sisaSaldo := saldoAwal - pelimpahanBefore - currentPelimpahan
+		sisaSaldoMap[p.ID] = sisaSaldo
 	}
 
 	// Build response
@@ -1036,7 +1061,7 @@ func GetPelimpahan(c *gin.Context) {
 			Pelimpahan: p,
 			SaldoBank:  jumlahBank,
 			SaldoTunai: jumlahTunai,
-			SaldoAwal:  saldoAwal,
+			SaldoAwal:  saldoAwalMap[p.ID],
 			SisaSaldo:  sisaSaldoMap[p.ID],
 		})
 	}
@@ -1388,6 +1413,93 @@ func GetLatestSaldo(c *gin.Context) {
 			"saldo_tunai": saldoTunai,
 			"total_saldo": saldoBank + saldoTunai,
 			"tanggal":     latestSaldo.Tanggal,
+		},
+	})
+}
+
+// GetSaldoByMonth calculates saldo at the end of a specific month
+func GetSaldoByMonth(c *gin.Context) {
+	month := c.Query("month")
+	year := c.Query("year")
+	if month == "" || year == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": "Month and year are required"})
+		return
+	}
+
+	// Calculate the last day of the selected month
+	monthInt := 0
+	yearInt := 0
+	fmt.Sscanf(month, "%d", &monthInt)
+	fmt.Sscanf(year, "%d", &yearInt)
+
+	// End of month date
+	var endOfMonth time.Time
+	if monthInt == 12 {
+		endOfMonth = time.Date(yearInt+1, 1, 1, 0, 0, 0, 0, time.Local).AddDate(0, 0, -1)
+	} else {
+		endOfMonth = time.Date(yearInt, time.Month(monthInt+1), 1, 0, 0, 0, 0, time.Local).AddDate(0, 0, -1)
+	}
+
+	// Get latest saldo bendahara (base saldo)
+	var latestSaldo models.SaldoBendahara
+	var baseSaldoBank float64 = 0
+	var baseSaldoTunai float64 = 0
+	var saldoAwalDate time.Time
+
+	if err := DB.Where("tahun_anggaran = ?", year).Order("tanggal desc").First(&latestSaldo).Error; err == nil {
+		baseSaldoBank = latestSaldo.SaldoBank
+		baseSaldoTunai = latestSaldo.SaldoTunai
+		saldoAwalDate = latestSaldo.Tanggal
+	}
+
+	// Calculate total top up until end of month
+	var totalTopUp float64
+	DB.Model(&models.TopUpSaldo{}).
+		Where("tahun_anggaran = ?", year).
+		Where("tanggal <= ?", endOfMonth).
+		Select("COALESCE(SUM(jumlah), 0)").Scan(&totalTopUp)
+
+	// Calculate total penarikan tunai until end of month
+	var totalPenarikan float64
+	DB.Model(&models.PenarikanTunai{}).
+		Where("tahun_anggaran = ?", year).
+		Where("tanggal <= ?", endOfMonth).
+		Select("COALESCE(SUM(jumlah), 0)").Scan(&totalPenarikan)
+
+	// Calculate total pelimpahan bank until end of month
+	var totalPelimpahanBank float64
+	DB.Model(&models.PelimpahanDetail{}).
+		Joins("JOIN pelimpahans ON pelimpahans.id = pelimpahan_details.pelimpahan_id").
+		Where("pelimpahans.tahun_anggaran = ?", year).
+		Where("pelimpahans.tanggal_pelimpahan <= ?", endOfMonth).
+		Where("pelimpahan_details.sumber_dana = ?", "bank").
+		Select("COALESCE(SUM(pelimpahan_details.jumlah), 0)").Scan(&totalPelimpahanBank)
+
+	// Calculate total pelimpahan tunai until end of month
+	var totalPelimpahanTunai float64
+	DB.Model(&models.PelimpahanDetail{}).
+		Joins("JOIN pelimpahans ON pelimpahans.id = pelimpahan_details.pelimpahan_id").
+		Where("pelimpahans.tahun_anggaran = ?", year).
+		Where("pelimpahans.tanggal_pelimpahan <= ?", endOfMonth).
+		Where("pelimpahan_details.sumber_dana = ?", "tunai").
+		Select("COALESCE(SUM(pelimpahan_details.jumlah), 0)").Scan(&totalPelimpahanTunai)
+
+	// Calculate final saldo
+	saldoBank := baseSaldoBank + totalTopUp - totalPenarikan - totalPelimpahanBank
+	saldoTunai := baseSaldoTunai + totalPenarikan - totalPelimpahanTunai
+
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"data": gin.H{
+			"saldo_awal":             baseSaldoBank + baseSaldoTunai,
+			"saldo_awal_date":        saldoAwalDate,
+			"total_topup":            totalTopUp,
+			"total_penarikan":        totalPenarikan,
+			"total_pelimpahan_bank":  totalPelimpahanBank,
+			"total_pelimpahan_tunai": totalPelimpahanTunai,
+			"saldo_bank":             saldoBank,
+			"saldo_tunai":            saldoTunai,
+			"total_saldo":            saldoBank + saldoTunai,
 		},
 	})
 }

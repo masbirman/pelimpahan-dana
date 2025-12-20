@@ -102,6 +102,11 @@ const routes = [
         name: 'LaporanPerJenis',
         component: () => import('@/views/laporan/PerJenis.vue')
       },
+      {
+        path: 'laporan/saldo',
+        name: 'LaporanSaldo',
+        component: () => import('@/views/laporan/Saldo.vue')
+      },
       // Saldo Bendahara (Bendahara & Super Admin)
       {
         path: 'saldo-bendahara',
