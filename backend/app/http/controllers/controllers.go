@@ -586,8 +586,14 @@ func UploadReportLogo(c *gin.Context) {
 
 // Unit Controllers
 func GetUnits(c *gin.Context) {
+	// Get tahun anggaran from header
+	tahunAnggaran := c.GetHeader("X-Tahun-Anggaran")
+	if tahunAnggaran == "" {
+		tahunAnggaran = "2025"
+	}
+
 	var units []models.Unit
-	query := DB.Model(&models.Unit{})
+	query := DB.Model(&models.Unit{}).Where("tahun_anggaran = ?", tahunAnggaran)
 
 	if search := c.Query("search"); search != "" {
 		query = query.Where("nama_unit ILIKE ? OR kode_unit ILIKE ?", "%"+search+"%", "%"+search+"%")
@@ -632,11 +638,20 @@ func GetUnits(c *gin.Context) {
 }
 
 func CreateUnit(c *gin.Context) {
+	// Get tahun anggaran from header
+	tahunAnggaran := c.GetHeader("X-Tahun-Anggaran")
+	if tahunAnggaran == "" {
+		tahunAnggaran = "2025"
+	}
+	tahunAnggaranInt := atoi(tahunAnggaran)
+
 	var unit models.Unit
 	if err := c.ShouldBindJSON(&unit); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": "Invalid request data"})
 		return
 	}
+
+	unit.TahunAnggaran = tahunAnggaranInt
 
 	if err := DB.Create(&unit).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": "Failed to create unit"})
@@ -669,6 +684,64 @@ func UpdateUnit(c *gin.Context) {
 
 	DB.Save(&unit)
 	c.JSON(http.StatusOK, gin.H{"success": true, "message": "Unit berhasil diupdate", "data": unit})
+}
+
+// Clone units from previous year to current year
+func CloneUnitsFromPreviousYear(c *gin.Context) {
+	// Get tahun anggaran from header
+	tahunAnggaran := c.GetHeader("X-Tahun-Anggaran")
+	if tahunAnggaran == "" {
+		tahunAnggaran = "2025"
+	}
+	tahunAnggaranInt := atoi(tahunAnggaran)
+	previousYear := tahunAnggaranInt - 1
+
+	// Check if current year already has units
+	var existingCount int64
+	DB.Model(&models.Unit{}).Where("tahun_anggaran = ?", tahunAnggaranInt).Count(&existingCount)
+	
+	if existingCount > 0 {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"success": false, 
+			"message": fmt.Sprintf("Tahun %d sudah memiliki %d unit. Hapus dulu jika ingin clone ulang.", tahunAnggaranInt, existingCount),
+		})
+		return
+	}
+
+	// Get units from previous year
+	var previousUnits []models.Unit
+	DB.Where("tahun_anggaran = ?", previousYear).Find(&previousUnits)
+
+	if len(previousUnits) == 0 {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"success": false, 
+			"message": fmt.Sprintf("Tidak ada data unit di tahun %d untuk di-copy", previousYear),
+		})
+		return
+	}
+
+	// Clone each unit
+	var clonedCount int
+	for _, u := range previousUnits {
+		newUnit := models.Unit{
+			TahunAnggaran: tahunAnggaranInt,
+			KodeUnit:      u.KodeUnit,
+			NamaUnit:      u.NamaUnit,
+			NamaPimpinan:  u.NamaPimpinan,
+			NIPPimpinan:   u.NIPPimpinan,
+			NamaBendahara: u.NamaBendahara,
+			NIPBendahara:  u.NIPBendahara,
+			NomorRekening: u.NomorRekening,
+		}
+		if err := DB.Create(&newUnit).Error; err == nil {
+			clonedCount++
+		}
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"message": fmt.Sprintf("%d unit berhasil di-copy dari tahun %d ke %d", clonedCount, previousYear, tahunAnggaranInt),
+	})
 }
 
 func DeleteUnit(c *gin.Context) {
@@ -1720,10 +1793,17 @@ func GetTopUpSaldo(c *gin.Context) {
 	sortBy := c.DefaultQuery("sort_by", "tanggal")
 	sortOrder := c.DefaultQuery("sort_order", "desc")
 
+	// Get tahun anggaran from header
+	tahunAnggaran := c.GetHeader("X-Tahun-Anggaran")
+	if tahunAnggaran == "" {
+		tahunAnggaran = "2025"
+	}
+
 	var topUpList []models.TopUpSaldo
 	var total int64
 
-	query := DB.Model(&models.TopUpSaldo{}).Preload("Creator")
+	query := DB.Model(&models.TopUpSaldo{}).Preload("Creator").
+		Where("tahun_anggaran = ?", tahunAnggaran)
 
 	if search != "" {
 		query = query.Where("keterangan LIKE ?", "%"+search+"%")
@@ -1849,10 +1929,17 @@ func GetPenarikanTunai(c *gin.Context) {
 	sortBy := c.DefaultQuery("sort_by", "tanggal")
 	sortOrder := c.DefaultQuery("sort_order", "desc")
 
+	// Get tahun anggaran from header
+	tahunAnggaran := c.GetHeader("X-Tahun-Anggaran")
+	if tahunAnggaran == "" {
+		tahunAnggaran = "2025"
+	}
+
 	var penarikanList []models.PenarikanTunai
 	var total int64
 
-	query := DB.Model(&models.PenarikanTunai{}).Preload("Creator")
+	query := DB.Model(&models.PenarikanTunai{}).Preload("Creator").
+		Where("tahun_anggaran = ?", tahunAnggaran)
 
 	if search != "" {
 		query = query.Where("keterangan LIKE ?", "%"+search+"%")

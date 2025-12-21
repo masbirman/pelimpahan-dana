@@ -94,6 +94,7 @@ func main() {
 			protected.GET("/units/export", controllers.ExportUnits)
 			protected.POST("/units/import", controllers.ImportUnits)
 			protected.POST("/units/bulk-delete", controllers.BulkDeleteUnits)
+			protected.POST("/units/clone-from-previous-year", controllers.CloneUnitsFromPreviousYear)
 			protected.GET("/units/:id", controllers.GetUnit)
 			protected.PUT("/units/:id", controllers.UpdateUnit)
 			protected.DELETE("/units/:id", controllers.DeleteUnit)

@@ -19,7 +19,8 @@ type User struct {
 
 type Unit struct {
 	ID            uint      `gorm:"primarykey" json:"id"`
-	KodeUnit      string    `gorm:"type:varchar(50);unique;not null" json:"kode_unit"`
+	TahunAnggaran int       `gorm:"not null;default:2025" json:"tahun_anggaran"`
+	KodeUnit      string    `gorm:"type:varchar(50);not null" json:"kode_unit"`
 	NamaUnit      string    `gorm:"type:varchar(255);not null" json:"nama_unit"`
 	NamaPimpinan  string    `gorm:"type:varchar(255)" json:"nama_pimpinan"`
 	NIPPimpinan   string    `gorm:"type:varchar(50)" json:"nip_pimpinan"`

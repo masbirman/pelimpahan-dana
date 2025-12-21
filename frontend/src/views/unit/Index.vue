@@ -72,7 +72,16 @@
     <!-- Mobile Card View -->
     <div class="md:hidden space-y-3">
       <div v-if="loading" class="text-center py-8 text-secondary-500 text-sm">Memuat data...</div>
-      <div v-else-if="!units.length" class="text-center py-8 text-secondary-500 text-sm">Tidak ada data unit kerja</div>
+      <div v-else-if="!units.length" class="text-center py-8 space-y-4">
+        <p class="text-secondary-500 text-sm">Tidak ada data unit kerja untuk tahun ini</p>
+        <button @click="cloneFromPreviousYear" :disabled="cloningUnits" class="btn-primary text-sm">
+          <svg v-if="cloningUnits" class="animate-spin w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+          </svg>
+          {{ cloningUnits ? 'Menyalin...' : 'Salin Data dari Tahun Sebelumnya' }}
+        </button>
+      </div>
       <div v-else v-for="unit in units" :key="unit.id" class="card p-3 shadow-sm border border-secondary-100 relative">
         <!-- Checkbox Absolute -->
         <div class="absolute top-3 left-3">
@@ -183,7 +192,12 @@
               </td>
             </tr>
             <tr v-if="!units.length && !loading">
-              <td colspan="7" class="px-4 py-8 text-center text-secondary-500">Tidak ada data unit kerja</td>
+              <td colspan="7" class="px-4 py-8 text-center">
+                <p class="text-secondary-500 mb-4">Tidak ada data unit kerja untuk tahun ini</p>
+                <button @click="cloneFromPreviousYear" :disabled="cloningUnits" class="btn-primary text-sm">
+                  {{ cloningUnits ? 'Menyalin...' : 'Salin Data dari Tahun Sebelumnya' }}
+                </button>
+              </td>
             </tr>
           </tbody>
         </table>
@@ -316,6 +330,7 @@ const showImportModal = ref(false)
 const importFile = ref(null)
 const importing = ref(false)
 const importResult = ref(null)
+const cloningUnits = ref(false)
 
 const isAllSelected = computed(() => units.value.length > 0 && selectedIds.value.length === units.value.length)
 
@@ -453,6 +468,23 @@ async function importData() {
     notificationStore.error('Gagal mengimport data')
   } finally {
     importing.value = false
+  }
+}
+
+async function cloneFromPreviousYear() {
+  cloningUnits.value = true
+  try {
+    const response = await api.post('/units/clone-from-previous-year')
+    if (response.data.success) {
+      notificationStore.success(response.data.message)
+      loadUnits()
+    } else {
+      notificationStore.error(response.data.message)
+    }
+  } catch (error) {
+    notificationStore.error(error.response?.data?.message || 'Gagal menyalin data unit')
+  } finally {
+    cloningUnits.value = false
   }
 }
 </script>
