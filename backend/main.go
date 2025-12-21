@@ -37,6 +37,8 @@ func main() {
 		&models.JenisPelimpahan{},
 		&models.Pelimpahan{},
 		&models.PelimpahanDetail{},
+		&models.PelimpahanRevision{},
+		&models.PengembalianDana{},
 		&models.Setting{},
 		&models.SaldoBendahara{},
 		&models.TopUpSaldo{},
@@ -107,6 +109,7 @@ func main() {
 			protected.GET("/pelimpahan", controllers.GetPelimpahan)
 			protected.POST("/pelimpahan", controllers.CreatePelimpahan)
 			protected.GET("/pelimpahan/:id", controllers.GetPelimpahanByID)
+			protected.GET("/pelimpahan/:id/revisions", controllers.GetPelimpahanRevisions)
 			protected.PUT("/pelimpahan/:id", controllers.UpdatePelimpahan)
 			protected.DELETE("/pelimpahan/:id", controllers.DeletePelimpahan)
 
@@ -150,6 +153,18 @@ func main() {
 
 			// Delete penarikan tunai (super_admin only)
 			protected.DELETE("/penarikan-tunai/:id", middleware.Role("super_admin"), controllers.DeletePenarikanTunai)
+
+			// Pengembalian Dana (bendahara & super_admin)
+			pengembalian := protected.Group("")
+			pengembalian.Use(middleware.Role("bendahara", "super_admin"))
+			{
+				pengembalian.GET("/pengembalian-dana", controllers.GetPengembalianDana)
+				pengembalian.GET("/pengembalian-dana/by-pelimpahan/:id", controllers.GetPengembalianByPelimpahan)
+				pengembalian.POST("/pengembalian-dana", controllers.CreatePengembalianDana)
+			}
+
+			// Delete pengembalian dana (super_admin only)
+			protected.DELETE("/pengembalian-dana/:id", middleware.Role("super_admin"), controllers.DeletePengembalianDana)
 
 			// Users (admin only)
 			admin := protected.Group("")

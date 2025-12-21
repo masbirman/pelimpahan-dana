@@ -148,6 +148,15 @@
                     </svg>
                   </router-link>
                   <button
+                    @click="openPengembalianModal(item)"
+                    class="p-2 text-amber-600 hover:bg-amber-50 rounded-lg transition-colors"
+                    title="Pengembalian Dana"
+                  >
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
+                    </svg>
+                  </button>
+                  <button
                     @click="confirmDelete(item)"
                     class="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                     title="Hapus"
@@ -198,6 +207,67 @@
         </div>
       </div>
     </div>
+
+    <!-- Pengembalian Modal -->
+    <div v-if="showPengembalianModal" class="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div class="absolute inset-0 bg-black/50" @click="closePengembalianModal"></div>
+      <div class="relative bg-white rounded-xl shadow-xl max-w-lg w-full p-6 animate-fadeIn">
+        <h3 class="text-lg font-semibold text-secondary-900 mb-1">Pengembalian Dana</h3>
+        <p class="text-secondary-500 text-sm mb-4">Pelimpahan Ke-{{ selectedPelimpahan?.nomor_pelimpahan }}</p>
+        
+        <div class="space-y-4">
+          <div>
+            <label class="label">Pilih Unit yang Mengembalikan <span class="text-red-500">*</span></label>
+            <select v-model="pengembalianForm.pelimpahan_detail_id" class="input" required>
+              <option value="">-- Pilih Unit --</option>
+              <option 
+                v-for="detail in selectedPelimpahan?.details" 
+                :key="detail.id" 
+                :value="detail.id"
+              >
+                {{ detail.unit?.nama_unit }} - {{ formatCurrency(detail.jumlah) }}
+              </option>
+            </select>
+          </div>
+          
+          <div>
+            <label class="label">Tanggal Pengembalian <span class="text-red-500">*</span></label>
+            <input v-model="pengembalianForm.tanggal" type="date" class="input" required />
+          </div>
+          
+          <div>
+            <label class="label">Jumlah Dikembalikan <span class="text-red-500">*</span></label>
+            <input v-model.number="pengembalianForm.jumlah" type="number" class="input" min="1" required />
+          </div>
+          
+          <div>
+            <label class="label">Dikembalikan Ke <span class="text-red-500">*</span></label>
+            <div class="flex gap-4 mt-1">
+              <label class="flex items-center cursor-pointer">
+                <input type="radio" v-model="pengembalianForm.sumber_dana" value="bank" class="w-4 h-4" />
+                <span class="ml-2 text-sm">💳 Bank</span>
+              </label>
+              <label class="flex items-center cursor-pointer">
+                <input type="radio" v-model="pengembalianForm.sumber_dana" value="tunai" class="w-4 h-4" />
+                <span class="ml-2 text-sm">💵 Tunai</span>
+              </label>
+            </div>
+          </div>
+          
+          <div>
+            <label class="label">Keterangan</label>
+            <textarea v-model="pengembalianForm.keterangan" class="input" rows="2" placeholder="Alasan pengembalian..."></textarea>
+          </div>
+        </div>
+        
+        <div class="flex justify-end gap-3 mt-6">
+          <button @click="closePengembalianModal" class="btn-secondary">Batal</button>
+          <button @click="submitPengembalian" class="btn-primary" :disabled="loadingPengembalian">
+            {{ loadingPengembalian ? 'Menyimpan...' : 'Simpan Pengembalian' }}
+          </button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -216,6 +286,18 @@ const meta = ref({ page: 1, per_page: 10, total: 0, last_page: 1 })
 const filters = reactive({ search: '', jenis_pelimpahan_id: '', month: '', sumber_dana: '' })
 const showDeleteModal = ref(false)
 const selectedItem = ref(null)
+
+// Pengembalian state
+const showPengembalianModal = ref(false)
+const selectedPelimpahan = ref(null)
+const loadingPengembalian = ref(false)
+const pengembalianForm = reactive({
+  pelimpahan_detail_id: '',
+  tanggal: new Date().toISOString().split('T')[0],
+  jumlah: 0,
+  sumber_dana: 'bank',
+  keterangan: ''
+})
 
 onMounted(async () => {
   await loadJenis()
@@ -305,5 +387,49 @@ function formatCurrency(value) {
 function formatDate(date) {
   if (!date) return '-'
   return new Date(date).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })
+}
+
+// Pengembalian functions
+function openPengembalianModal(item) {
+  selectedPelimpahan.value = item
+  pengembalianForm.pelimpahan_detail_id = ''
+  pengembalianForm.tanggal = new Date().toISOString().split('T')[0]
+  pengembalianForm.jumlah = 0
+  pengembalianForm.sumber_dana = 'bank'
+  pengembalianForm.keterangan = ''
+  showPengembalianModal.value = true
+}
+
+function closePengembalianModal() {
+  showPengembalianModal.value = false
+  selectedPelimpahan.value = null
+}
+
+async function submitPengembalian() {
+  if (!pengembalianForm.pelimpahan_detail_id || !pengembalianForm.jumlah) {
+    notificationStore.error('Pilih unit dan masukkan jumlah')
+    return
+  }
+
+  loadingPengembalian.value = true
+  try {
+    const response = await api.post('/pengembalian-dana', {
+      pelimpahan_detail_id: parseInt(pengembalianForm.pelimpahan_detail_id),
+      tanggal: pengembalianForm.tanggal,
+      jumlah: parseFloat(pengembalianForm.jumlah),
+      sumber_dana: pengembalianForm.sumber_dana,
+      keterangan: pengembalianForm.keterangan
+    })
+    
+    if (response.data.success) {
+      notificationStore.success(response.data.message)
+      closePengembalianModal()
+      loadData()
+    }
+  } catch (error) {
+    notificationStore.error(error.response?.data?.message || 'Gagal menyimpan pengembalian')
+  } finally {
+    loadingPengembalian.value = false
+  }
 }
 </script>

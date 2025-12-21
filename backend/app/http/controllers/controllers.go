@@ -1165,7 +1165,7 @@ func GetPelimpahanByID(c *gin.Context) {
 
 func UpdatePelimpahan(c *gin.Context) {
 	var pelimpahan models.Pelimpahan
-	if err := DB.First(&pelimpahan, c.Param("id")).Error; err != nil {
+	if err := DB.Preload("Details").First(&pelimpahan, c.Param("id")).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"success": false, "message": "Not found"})
 		return
 	}
@@ -1174,6 +1174,7 @@ func UpdatePelimpahan(c *gin.Context) {
 		TanggalPelimpahan string `json:"tanggal_pelimpahan"`
 		UraianPelimpahan  string `json:"uraian_pelimpahan"`
 		JenisPelimpahanID uint   `json:"jenis_pelimpahan_id"`
+		Reason            string `json:"reason"` // Alasan koreksi
 		Details           []struct {
 			UnitID        uint    `json:"unit_id"`
 			NamaPenerima  string  `json:"nama_penerima"`
@@ -1191,6 +1192,24 @@ func UpdatePelimpahan(c *gin.Context) {
 		totalJumlah += d.Jumlah
 	}
 
+	// Serialize old data for revision history
+	dataBefore := map[string]interface{}{
+		"tanggal_pelimpahan":  pelimpahan.TanggalPelimpahan,
+		"uraian_pelimpahan":   pelimpahan.UraianPelimpahan,
+		"jenis_pelimpahan_id": pelimpahan.JenisPelimpahanID,
+		"total_jumlah":        pelimpahan.TotalJumlah,
+		"details":             pelimpahan.Details,
+	}
+	dataBeforeJSON, _ := json.Marshal(dataBefore)
+
+	// Get next revision number
+	var lastRevision models.PelimpahanRevision
+	var revisionNumber int = 1
+	if err := DB.Where("pelimpahan_id = ?", pelimpahan.ID).Order("revision_number desc").First(&lastRevision).Error; err == nil {
+		revisionNumber = lastRevision.RevisionNumber + 1
+	}
+
+	// Update pelimpahan
 	pelimpahan.TanggalPelimpahan = tanggal
 	pelimpahan.UraianPelimpahan = req.UraianPelimpahan
 	pelimpahan.JenisPelimpahanID = req.JenisPelimpahanID
@@ -1201,6 +1220,7 @@ func UpdatePelimpahan(c *gin.Context) {
 	DB.Where("pelimpahan_id = ?", pelimpahan.ID).Delete(&models.PelimpahanDetail{})
 
 	// Create new details
+	var newDetails []models.PelimpahanDetail
 	for _, d := range req.Details {
 		sumberDana := d.SumberDana
 		if sumberDana != "bank" && sumberDana != "tunai" {
@@ -1215,17 +1235,64 @@ func UpdatePelimpahan(c *gin.Context) {
 			SumberDana:    sumberDana,
 		}
 		DB.Create(&detail)
+		newDetails = append(newDetails, detail)
 	}
+
+	// Serialize new data for revision history
+	dataAfter := map[string]interface{}{
+		"tanggal_pelimpahan":  tanggal,
+		"uraian_pelimpahan":   req.UraianPelimpahan,
+		"jenis_pelimpahan_id": req.JenisPelimpahanID,
+		"total_jumlah":        totalJumlah,
+		"details":             newDetails,
+	}
+	dataAfterJSON, _ := json.Marshal(dataAfter)
+
+	// Get user ID from context
+	userID, _ := c.Get("user_id")
+	revisedBy := uint(1)
+	if uid, ok := userID.(uint); ok {
+		revisedBy = uid
+	}
+
+	// Save revision history
+	revision := models.PelimpahanRevision{
+		PelimpahanID:   pelimpahan.ID,
+		RevisionNumber: revisionNumber,
+		DataBefore:     string(dataBeforeJSON),
+		DataAfter:      string(dataAfterJSON),
+		Reason:         req.Reason,
+		RevisedBy:      revisedBy,
+		RevisedAt:      time.Now(),
+	}
+	DB.Create(&revision)
 
 	DB.Preload("JenisPelimpahan").Preload("Creator").Preload("Details.Unit").First(&pelimpahan, pelimpahan.ID)
 
 	c.JSON(http.StatusOK, gin.H{"success": true, "message": "Pelimpahan berhasil diupdate", "data": pelimpahan})
 }
 
+
 func DeletePelimpahan(c *gin.Context) {
 	DB.Where("pelimpahan_id = ?", c.Param("id")).Delete(&models.PelimpahanDetail{})
 	DB.Delete(&models.Pelimpahan{}, c.Param("id"))
 	c.JSON(http.StatusOK, gin.H{"success": true, "message": "Pelimpahan berhasil dihapus"})
+}
+
+// GetPelimpahanRevisions returns revision history for a pelimpahan
+func GetPelimpahanRevisions(c *gin.Context) {
+	pelimpahanID := c.Param("id")
+	
+	var revisions []models.PelimpahanRevision
+	if err := DB.Where("pelimpahan_id = ?", pelimpahanID).
+		Preload("Revisor").
+		Order("revision_number desc").
+		Find(&revisions).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": "Failed to fetch revisions"})
+		return
+	}
+	
+	c.JSON(http.StatusOK, gin.H{"success": true, "data": revisions})
 }
 
 // User Controllers
@@ -1405,6 +1472,21 @@ func GetLatestSaldo(c *gin.Context) {
 		Where("pelimpahan_details.sumber_dana = ?", "tunai").
 		Select("COALESCE(SUM(pelimpahan_details.jumlah), 0)").Scan(&totalPelimpahanTunai)
 	saldoTunai -= totalPelimpahanTunai
+
+	// Add pengembalian dana (returns go back to saldo)
+	var totalPengembalianBank float64
+	DB.Model(&models.PengembalianDana{}).
+		Where("tahun_anggaran = ?", tahunAnggaran).
+		Where("sumber_dana = ?", "bank").
+		Select("COALESCE(SUM(jumlah), 0)").Scan(&totalPengembalianBank)
+	saldoBank += totalPengembalianBank
+
+	var totalPengembalianTunai float64
+	DB.Model(&models.PengembalianDana{}).
+		Where("tahun_anggaran = ?", tahunAnggaran).
+		Where("sumber_dana = ?", "tunai").
+		Select("COALESCE(SUM(jumlah), 0)").Scan(&totalPengembalianTunai)
+	saldoTunai += totalPengembalianTunai
 
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
@@ -1952,4 +2034,129 @@ func DeletePenarikanTunai(c *gin.Context) {
 		"success": true,
 		"message": "Penarikan tunai berhasil dihapus",
 	})
+}
+
+// Pengembalian Dana Controllers
+func GetPengembalianDana(c *gin.Context) {
+	var pengembalianList []models.PengembalianDana
+	query := DB.Model(&models.PengembalianDana{}).
+		Preload("PelimpahanDetail.Unit").
+		Preload("Creator")
+
+	// Filter by tahun anggaran
+	tahunAnggaran := time.Now().Year()
+	if tahun := c.Query("tahun_anggaran"); tahun != "" {
+		fmt.Sscanf(tahun, "%d", &tahunAnggaran)
+	}
+	query = query.Where("tahun_anggaran = ?", tahunAnggaran)
+
+	query.Order("tanggal desc").Find(&pengembalianList)
+
+	c.JSON(http.StatusOK, gin.H{"success": true, "data": pengembalianList})
+}
+
+func GetPengembalianByPelimpahan(c *gin.Context) {
+	pelimpahanID := c.Param("id")
+	
+	var pengembalianList []models.PengembalianDana
+	DB.Model(&models.PengembalianDana{}).
+		Joins("JOIN pelimpahan_details ON pelimpahan_details.id = pengembalian_danas.pelimpahan_detail_id").
+		Where("pelimpahan_details.pelimpahan_id = ?", pelimpahanID).
+		Preload("PelimpahanDetail.Unit").
+		Preload("Creator").
+		Order("pengembalian_danas.tanggal desc").
+		Find(&pengembalianList)
+
+	c.JSON(http.StatusOK, gin.H{"success": true, "data": pengembalianList})
+}
+
+func CreatePengembalianDana(c *gin.Context) {
+	var req struct {
+		PelimpahanDetailID uint    `json:"pelimpahan_detail_id" binding:"required"`
+		Tanggal            string  `json:"tanggal" binding:"required"`
+		Jumlah             float64 `json:"jumlah" binding:"required"`
+		SumberDana         string  `json:"sumber_dana"`
+		Keterangan         string  `json:"keterangan"`
+	}
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": "Invalid request"})
+		return
+	}
+
+	// Validate pelimpahan detail exists
+	var detail models.PelimpahanDetail
+	if err := DB.Preload("Unit").First(&detail, req.PelimpahanDetailID).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"success": false, "message": "Detail pelimpahan tidak ditemukan"})
+		return
+	}
+
+	// Validate jumlah tidak melebihi jumlah pelimpahan
+	var totalPengembalian float64
+	DB.Model(&models.PengembalianDana{}).
+		Where("pelimpahan_detail_id = ?", req.PelimpahanDetailID).
+		Select("COALESCE(SUM(jumlah), 0)").
+		Scan(&totalPengembalian)
+
+	if totalPengembalian + req.Jumlah > detail.Jumlah {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"success": false, 
+			"message": fmt.Sprintf("Jumlah pengembalian melebihi sisa yang dapat dikembalikan. Maksimal: Rp %s", 
+				formatCurrency(detail.Jumlah - totalPengembalian)),
+		})
+		return
+	}
+
+	tanggal, err := time.Parse("2006-01-02", req.Tanggal)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": "Format tanggal tidak valid"})
+		return
+	}
+
+	sumberDana := req.SumberDana
+	if sumberDana != "bank" && sumberDana != "tunai" {
+		sumberDana = "bank"
+	}
+
+	userID, _ := c.Get("user_id")
+	createdBy := uint(1)
+	if uid, ok := userID.(uint); ok {
+		createdBy = uid
+	}
+
+	pengembalian := models.PengembalianDana{
+		TahunAnggaran:      tanggal.Year(),
+		PelimpahanDetailID: req.PelimpahanDetailID,
+		Tanggal:            tanggal,
+		Jumlah:             req.Jumlah,
+		SumberDana:         sumberDana,
+		Keterangan:         req.Keterangan,
+		CreatedBy:          createdBy,
+	}
+
+	if err := DB.Create(&pengembalian).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": "Gagal menyimpan data"})
+		return
+	}
+
+	DB.Preload("PelimpahanDetail.Unit").Preload("Creator").First(&pengembalian, pengembalian.ID)
+
+	c.JSON(http.StatusCreated, gin.H{
+		"success": true,
+		"message": fmt.Sprintf("Pengembalian dana dari %s berhasil dicatat", detail.Unit.NamaUnit),
+		"data":    pengembalian,
+	})
+}
+
+func DeletePengembalianDana(c *gin.Context) {
+	if err := DB.Delete(&models.PengembalianDana{}, c.Param("id")).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": "Gagal menghapus data"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"success": true, "message": "Pengembalian dana berhasil dihapus"})
+}
+
+func formatCurrency(value float64) string {
+	return fmt.Sprintf("%.0f", value)
 }

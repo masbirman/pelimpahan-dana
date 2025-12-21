@@ -118,3 +118,34 @@ type PenarikanTunai struct {
 	// Relations
 	Creator User `gorm:"foreignKey:CreatedBy" json:"creator,omitempty"`
 }
+
+type PelimpahanRevision struct {
+	ID             uint      `gorm:"primarykey" json:"id"`
+	PelimpahanID   uint      `gorm:"not null" json:"pelimpahan_id"`
+	RevisionNumber int       `gorm:"not null" json:"revision_number"`
+	DataBefore     string    `gorm:"type:jsonb" json:"data_before"`
+	DataAfter      string    `gorm:"type:jsonb" json:"data_after"`
+	Reason         string    `gorm:"type:text" json:"reason"`
+	RevisedBy      uint      `gorm:"not null" json:"revised_by"`
+	RevisedAt      time.Time `json:"revised_at"`
+
+	// Relations
+	Revisor User `gorm:"foreignKey:RevisedBy" json:"revisor,omitempty"`
+}
+
+type PengembalianDana struct {
+	ID                 uint      `gorm:"primarykey" json:"id"`
+	TahunAnggaran      int       `gorm:"not null;default:2025" json:"tahun_anggaran"`
+	PelimpahanDetailID uint      `gorm:"not null" json:"pelimpahan_detail_id"`
+	Tanggal            time.Time `gorm:"type:date;not null" json:"tanggal"`
+	Jumlah             float64   `gorm:"type:decimal(15,2);not null" json:"jumlah"`
+	SumberDana         string    `gorm:"type:varchar(10);not null;default:bank" json:"sumber_dana"` // dikembalikan ke bank/tunai
+	Keterangan         string    `gorm:"type:text" json:"keterangan"`
+	CreatedBy          uint      `gorm:"not null" json:"created_by"`
+	CreatedAt          time.Time `json:"created_at"`
+	UpdatedAt          time.Time `json:"updated_at"`
+
+	// Relations
+	PelimpahanDetail PelimpahanDetail `gorm:"foreignKey:PelimpahanDetailID" json:"pelimpahan_detail,omitempty"`
+	Creator          User             `gorm:"foreignKey:CreatedBy" json:"creator,omitempty"`
+}
