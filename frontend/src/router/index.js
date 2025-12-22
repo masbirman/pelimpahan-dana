@@ -159,6 +159,13 @@ const routes = [
         component: () => import('@/views/user/Form.vue'),
         meta: { roles: ['super_admin'] }
       },
+      // Backup (Super Admin only)
+      {
+        path: 'backup',
+        name: 'Backup',
+        component: () => import('@/views/Backup.vue'),
+        meta: { roles: ['super_admin'] }
+      },
       // Settings (Super Admin only)
       {
         path: 'settings',
