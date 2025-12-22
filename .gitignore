@@ -53,3 +53,4 @@ go.work
 .nuxt
 .output
 .cache
+backups/

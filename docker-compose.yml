@@ -57,8 +57,14 @@ services:
       DB_USERNAME: pelimpahan
       DB_PASSWORD: pelimpahan_secret
       JWT_SECRET: your-jwt-secret-key-here
+      # Google OAuth for Backup (set these in Dokploy environment or .env)
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+      GOOGLE_REDIRECT_URL: http://localhost:8000/api/backup/google/callback
+      FRONTEND_URL: http://localhost:5173
     volumes:
       - ./uploads:/app/uploads
+      - ./backups:/app/backups
     networks:
       - pelimpahan_network
     depends_on:

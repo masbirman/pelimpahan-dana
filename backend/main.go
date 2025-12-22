@@ -51,6 +51,9 @@ func main() {
 	// Set DB in controllers
 	controllers.SetDB(DB)
 
+	// Initialize Google OAuth for backup
+	controllers.InitGoogleOAuth()
+
 	// Create Gin router
 	r := gin.Default()
 
@@ -177,7 +180,29 @@ func main() {
 				admin.PUT("/users/:id", controllers.UpdateUser)
 				admin.DELETE("/users/:id", controllers.DeleteUser)
 			}
+
+			// Backup (super_admin only)
+			backup := protected.Group("/backup")
+			backup.Use(middleware.Role("super_admin"))
+			{
+				backup.POST("/create", controllers.CreateBackup)
+				backup.GET("/history", controllers.GetBackupHistory)
+				backup.GET("/download/:filename", controllers.DownloadBackup)
+				backup.DELETE("/:filename", controllers.DeleteBackup)
+
+				// Google Drive
+				backup.GET("/google/status", controllers.GoogleDriveStatus)
+				backup.GET("/google/auth-url", controllers.GoogleDriveAuthURL)
+				backup.POST("/google/disconnect", controllers.GoogleDriveDisconnect)
+				backup.POST("/google/upload/:filename", controllers.UploadToGoogleDrive)
+				backup.GET("/google/list", controllers.ListGoogleDriveBackups)
+				backup.GET("/google/download/:fileId", controllers.DownloadFromGoogleDrive)
+				backup.DELETE("/google/:fileId", controllers.DeleteFromGoogleDrive)
+			}
 		}
+
+		// Google OAuth callback (public, no auth required)
+		api.GET("/backup/google/callback", controllers.GoogleDriveCallback)
 	}
 
 	// Start server
