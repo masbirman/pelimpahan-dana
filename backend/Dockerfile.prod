@@ -24,8 +24,8 @@ RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build \
 # Stage 2: Runtime
 FROM alpine:3.19
 
-# Install runtime dependencies (including postgresql-client for pg_dump backup)
-RUN apk add --no-cache ca-certificates tzdata postgresql-client
+# Install runtime dependencies
+RUN apk add --no-cache ca-certificates tzdata
 
 # Set timezone
 ENV TZ=Asia/Makassar
@@ -40,8 +40,8 @@ WORKDIR /app
 # Copy binary from builder
 COPY --from=builder /build/main .
 
-# Create uploads and backups directories
-RUN mkdir -p /app/uploads /app/backups && chown -R appuser:appgroup /app
+# Create uploads directory
+RUN mkdir -p /app/uploads && chown -R appuser:appgroup /app
 
 # Switch to non-root user
 USER appuser

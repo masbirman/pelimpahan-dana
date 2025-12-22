@@ -198,14 +198,6 @@ const LaporanIcon = {
   }
 }
 
-const BackupIcon = {
-  render() {
-    return h('svg', { fill: 'none', stroke: 'currentColor', viewBox: '0 0 24 24' }, [
-      h('path', { 'stroke-linecap': 'round', 'stroke-linejoin': 'round', 'stroke-width': '2', d: 'M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4' })
-    ])
-  }
-}
-
 const SettingsIcon = {
   render() {
     return h('svg', { fill: 'none', stroke: 'currentColor', viewBox: '0 0 24 24' }, [
@@ -224,7 +216,6 @@ const menuItems = [
   { path: '/jenis-pelimpahan', label: 'Jenis Pelimpahan', icon: JenisIcon },
   { path: '/saldo-bendahara', label: 'Saldo Bendahara', icon: SaldoIcon, roles: ['bendahara', 'super_admin'] },
   { path: '/users', label: 'Manajemen User', icon: UserIcon, roles: ['super_admin'] },
-  { path: '/backup', label: 'Backup Database', icon: BackupIcon, roles: ['super_admin'] },
   { path: '/settings', label: 'Pengaturan', icon: SettingsIcon, roles: ['super_admin'] }
 ]
 </script>
