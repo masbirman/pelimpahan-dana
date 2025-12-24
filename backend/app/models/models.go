@@ -95,6 +95,7 @@ type SaldoBendahara struct {
 type TopUpSaldo struct {
 	ID            uint      `gorm:"primarykey" json:"id"`
 	TahunAnggaran int       `gorm:"not null;default:2025" json:"tahun_anggaran"`
+	JenisSaldo    string    `gorm:"type:varchar(10);not null;default:'UPGU'" json:"jenis_saldo"` // UPGU or TU
 	Tanggal       time.Time `gorm:"type:date;not null" json:"tanggal"`
 	Jumlah        float64   `gorm:"type:decimal(15,2);not null" json:"jumlah"`
 	Keterangan    string    `gorm:"type:text;not null" json:"keterangan"`

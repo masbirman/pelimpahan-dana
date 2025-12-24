@@ -1659,6 +1659,115 @@ func GetSaldoByMonth(c *gin.Context) {
 	})
 }
 
+// GetSisaSaldoPerJenis calculates remaining saldo per jenis pelimpahan (UP/GU and TU)
+// Logic:
+// UP/GU pool = Saldo Bendahara + TopUp(UPGU) - Penarikan - Pelimpahan UP/GU + Pengembalian UP/GU
+// TU pool = TopUp(TU) - Pelimpahan TU + Pengembalian TU (separate tracking)
+func GetSisaSaldoPerJenis(c *gin.Context) {
+	// Get tahun anggaran from header
+	tahunAnggaran := c.GetHeader("X-Tahun-Anggaran")
+	if tahunAnggaran == "" {
+		tahunAnggaran = "2025"
+	}
+
+	// ============================================
+	// CALCULATE SISA SALDO UP/GU
+	// ============================================
+
+	// Get base saldo bendahara (bank + tunai) - this is for UP/GU
+	var latestSaldo models.SaldoBendahara
+	var baseSaldoUPGU float64 = 0
+	if err := DB.Where("tahun_anggaran = ?", tahunAnggaran).Order("tanggal desc").First(&latestSaldo).Error; err == nil {
+		baseSaldoUPGU = latestSaldo.SaldoBank + latestSaldo.SaldoTunai
+	}
+
+	// Add TopUp for UPGU only
+	var totalTopUpUPGU float64
+	DB.Model(&models.TopUpSaldo{}).
+		Where("tahun_anggaran = ?", tahunAnggaran).
+		Where("jenis_saldo = ? OR jenis_saldo IS NULL OR jenis_saldo = ''", "UPGU").
+		Select("COALESCE(SUM(jumlah), 0)").Scan(&totalTopUpUPGU)
+	baseSaldoUPGU += totalTopUpUPGU
+
+	// Subtract penarikan tunai (only for UPGU pool)
+	var totalPenarikan float64
+	DB.Model(&models.PenarikanTunai{}).
+		Where("tahun_anggaran = ?", tahunAnggaran).
+		Select("COALESCE(SUM(jumlah), 0)").Scan(&totalPenarikan)
+	baseSaldoUPGU -= totalPenarikan
+
+	// Get jenis pelimpahan IDs
+	var jenisUP, jenisGU, jenisTU models.JenisPelimpahan
+	DB.Where("kode_jenis = ?", "UP").First(&jenisUP)
+	DB.Where("kode_jenis = ?", "GU").First(&jenisGU)
+	DB.Where("kode_jenis = ?", "TU").First(&jenisTU)
+
+	// Calculate pelimpahan for UP/GU
+	var totalPelimpahanUPGU float64
+	DB.Model(&models.PelimpahanDetail{}).
+		Joins("JOIN pelimpahans ON pelimpahans.id = pelimpahan_details.pelimpahan_id").
+		Where("pelimpahans.tahun_anggaran = ?", tahunAnggaran).
+		Where("pelimpahans.jenis_pelimpahan_id IN ?", []uint{jenisUP.ID, jenisGU.ID}).
+		Select("COALESCE(SUM(pelimpahan_details.jumlah), 0)").Scan(&totalPelimpahanUPGU)
+
+	// Calculate pengembalian for UP/GU
+	var totalPengembalianUPGU float64
+	DB.Model(&models.PengembalianDana{}).
+		Joins("JOIN pelimpahan_details ON pelimpahan_details.id = pengembalian_danas.pelimpahan_detail_id").
+		Joins("JOIN pelimpahans ON pelimpahans.id = pelimpahan_details.pelimpahan_id").
+		Where("pengembalian_danas.tahun_anggaran = ?", tahunAnggaran).
+		Where("pelimpahans.jenis_pelimpahan_id IN ?", []uint{jenisUP.ID, jenisGU.ID}).
+		Select("COALESCE(SUM(pengembalian_danas.jumlah), 0)").Scan(&totalPengembalianUPGU)
+
+	// Sisa UP/GU
+	sisaUPGU := baseSaldoUPGU - totalPelimpahanUPGU + totalPengembalianUPGU
+
+	// ============================================
+	// CALCULATE SISA SALDO TU (Separate Pool)
+	// ============================================
+
+	// TU has its own top up pool (no base saldo)
+	var totalTopUpTU float64
+	DB.Model(&models.TopUpSaldo{}).
+		Where("tahun_anggaran = ?", tahunAnggaran).
+		Where("jenis_saldo = ?", "TU").
+		Select("COALESCE(SUM(jumlah), 0)").Scan(&totalTopUpTU)
+
+	// Calculate pelimpahan for TU
+	var totalPelimpahanTU float64
+	DB.Model(&models.PelimpahanDetail{}).
+		Joins("JOIN pelimpahans ON pelimpahans.id = pelimpahan_details.pelimpahan_id").
+		Where("pelimpahans.tahun_anggaran = ?", tahunAnggaran).
+		Where("pelimpahans.jenis_pelimpahan_id = ?", jenisTU.ID).
+		Select("COALESCE(SUM(pelimpahan_details.jumlah), 0)").Scan(&totalPelimpahanTU)
+
+	// Calculate pengembalian for TU
+	var totalPengembalianTU float64
+	DB.Model(&models.PengembalianDana{}).
+		Joins("JOIN pelimpahan_details ON pelimpahan_details.id = pengembalian_danas.pelimpahan_detail_id").
+		Joins("JOIN pelimpahans ON pelimpahans.id = pelimpahan_details.pelimpahan_id").
+		Where("pengembalian_danas.tahun_anggaran = ?", tahunAnggaran).
+		Where("pelimpahans.jenis_pelimpahan_id = ?", jenisTU.ID).
+		Select("COALESCE(SUM(pengembalian_danas.jumlah), 0)").Scan(&totalPengembalianTU)
+
+	// Sisa TU = TopUp TU - Pelimpahan TU + Pengembalian TU
+	sisaTU := totalTopUpTU - totalPelimpahanTU + totalPengembalianTU
+
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"data": gin.H{
+			"sisa_upgu":         sisaUPGU,
+			"sisa_tu":           sisaTU,
+			"topup_upgu":        totalTopUpUPGU,
+			"topup_tu":          totalTopUpTU,
+			"pelimpahan_upgu":   totalPelimpahanUPGU,
+			"pelimpahan_tu":     totalPelimpahanTU,
+			"pengembalian_upgu": totalPengembalianUPGU,
+			"pengembalian_tu":   totalPengembalianTU,
+		},
+	})
+}
+
 func GetSaldoBendaharaByID(c *gin.Context) {
 	var saldo models.SaldoBendahara
 	if err := DB.Preload("Creator").First(&saldo, c.Param("id")).Error; err != nil {

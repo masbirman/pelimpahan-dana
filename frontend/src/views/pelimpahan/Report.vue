@@ -125,6 +125,18 @@
           </p>
         </div>
 
+        <!-- Sisa Saldo Berdasarkan Jenis Pelimpahan -->
+        <div class="grid grid-cols-2 gap-4 mt-4 print-sisa-saldo">
+          <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+            <p class="text-xs text-blue-600 font-medium mb-1">Sisa Saldo UP/GU</p>
+            <p class="text-lg font-bold text-blue-700">{{ formatCurrency(sisaSaldoUPGU) }}</p>
+          </div>
+          <div class="bg-amber-50 border border-amber-200 rounded-lg p-4">
+            <p class="text-xs text-amber-600 font-medium mb-1">Sisa Saldo TU</p>
+            <p class="text-lg font-bold text-amber-700">{{ formatCurrency(sisaSaldoTU) }}</p>
+          </div>
+        </div>
+
         <!-- Tanda Tangan -->
         <div v-if="reportHeader.signatory_left.nama || reportHeader.signatory_right.nama" class="mt-8 pt-8 print-signature">
           <div class="grid grid-cols-2 gap-8 text-center text-sm">
@@ -158,6 +170,8 @@ const router = useRouter()
 const notificationStore = useNotificationStore()
 
 const pelimpahan = ref(null)
+const sisaSaldoUPGU = ref(0)
+const sisaSaldoTU = ref(0)
 const reportHeader = ref({
   header: { logo_url: '', instansi: '', dinas: '', alamat: '' },
   signatory_left: { jabatan: '', nama: '', nip: '' },
@@ -203,6 +217,13 @@ onMounted(async () => {
           nip: data.signatory_right?.nip || ''
         }
       }
+    }
+
+    // Load sisa saldo per jenis pelimpahan
+    const saldoResponse = await api.get('/saldo-bendahara/sisa-per-jenis')
+    if (saldoResponse.data.success && saldoResponse.data.data) {
+      sisaSaldoUPGU.value = saldoResponse.data.data.sisa_upgu || 0
+      sisaSaldoTU.value = saldoResponse.data.data.sisa_tu || 0
     }
   } catch (error) {
     notificationStore.error('Gagal memuat data')
@@ -277,6 +298,15 @@ function printReport() {
   }
   .print-terbilang {
     background: #f0f0f0 !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  .print-sisa-saldo {
+    margin-top: 10px !important;
+  }
+  .print-sisa-saldo > div {
+    background: #f5f5f5 !important;
+    border: 1px solid #ccc !important;
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
   }
