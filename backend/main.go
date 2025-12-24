@@ -46,6 +46,7 @@ func main() {
 		&models.SetorKasBUD{},
 		&models.SetoranPengembalian{},
 		&models.SetoranPengembalianDetail{},
+		&models.LoginContent{},
 	)
 
 	// Seed database
@@ -72,6 +73,7 @@ func main() {
 		// Public routes
 		api.POST("/login", controllers.Login)
 		api.GET("/branding", controllers.GetBranding) // Public branding endpoint for login page
+		api.GET("/login-content/active", controllers.GetActiveLoginContent) // Public active content for login page
 
 		// Protected routes
 		protected := api.Group("")
@@ -94,6 +96,13 @@ func main() {
 			protected.POST("/settings/report-logo", controllers.UploadReportLogo)
 			protected.GET("/settings/lock-status", controllers.GetLockStatus)
 			protected.POST("/settings/toggle-lock", middleware.Role("super_admin"), controllers.ToggleLock)
+
+			// Login Content (super_admin only)
+			protected.GET("/login-content", controllers.GetLoginContents)
+			protected.POST("/login-content", middleware.Role("super_admin"), controllers.CreateLoginContent)
+			protected.PUT("/login-content/:id", middleware.Role("super_admin"), controllers.UpdateLoginContent)
+			protected.DELETE("/login-content/:id", middleware.Role("super_admin"), controllers.DeleteLoginContent)
+			protected.POST("/login-content/:id/image", middleware.Role("super_admin"), controllers.UploadLoginContentImage)
 
 			// Units - specific routes BEFORE wildcard :id
 			protected.GET("/units", controllers.GetUnits)

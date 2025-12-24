@@ -195,3 +195,20 @@ type SetoranPengembalianDetail struct {
 	// Relations
 	Unit Unit `gorm:"foreignKey:UnitID" json:"unit,omitempty"`
 }
+
+// LoginContent - Konten halaman login yang terjadwal
+type LoginContent struct {
+	ID          uint      `gorm:"primarykey" json:"id"`
+	Title       string    `gorm:"type:varchar(255);not null" json:"title"`
+	Description string    `gorm:"type:text" json:"description"`
+	ImageURL    string    `gorm:"type:varchar(255)" json:"image_url"`
+	ImageWidth  int       `gorm:"default:200" json:"image_width"`       // px
+	TitleSize   int       `gorm:"default:24" json:"title_size"`         // px
+	DescSize    int       `gorm:"default:14" json:"desc_size"`          // px
+	StartDate   time.Time `gorm:"type:date;not null" json:"start_date"`
+	EndDate     time.Time `gorm:"type:date;not null" json:"end_date"`
+	IsActive    bool      `gorm:"default:true" json:"is_active"`
+	CreatedAt   time.Time `json:"created_at"`
+	UpdatedAt   time.Time `json:"updated_at"`
+}
+

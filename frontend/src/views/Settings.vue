@@ -32,6 +32,12 @@
         >
           🔒 Kunci Tahun
         </button>
+        <button 
+          @click="activeTab = 'login-content'" 
+          :class="['pb-3 px-1 text-sm font-medium border-b-2 transition-colors', activeTab === 'login-content' ? 'border-primary-600 text-primary-600' : 'border-transparent text-secondary-500 hover:text-secondary-700']"
+        >
+          🖼️ Konten Login
+        </button>
       </nav>
     </div>
 
@@ -383,6 +389,106 @@
         </div>
       </div>
     </div>
+
+    <!-- Login Content Tab -->
+    <div v-if="activeTab === 'login-content'" class="space-y-6">
+      <div class="card">
+        <div class="card-header flex items-center justify-between">
+          <div>
+            <h3 class="font-semibold text-secondary-900">Konten Halaman Login</h3>
+            <p class="text-sm text-secondary-500">Kelola konten kiri halaman login berdasarkan jadwal</p>
+          </div>
+          <button @click="openContentModal(null)" class="btn-primary text-sm">
+            + Tambah Konten
+          </button>
+        </div>
+        <div class="card-body p-0">
+          <div v-if="loginContents.length === 0" class="p-8 text-center text-secondary-500">
+            <p>Belum ada konten. Klik "Tambah Konten" untuk menambah.</p>
+          </div>
+          <div v-else class="divide-y divide-secondary-200">
+            <div v-for="content in loginContents" :key="content.id" class="p-4 flex items-center justify-between hover:bg-secondary-50">
+              <div class="flex items-center gap-4">
+                <div v-if="content.image_url" class="w-16 h-16 rounded-lg overflow-hidden bg-secondary-100">
+                  <img :src="apiBaseUrl + content.image_url" class="w-full h-full object-cover" />
+                </div>
+                <div v-else class="w-16 h-16 rounded-lg bg-secondary-100 flex items-center justify-center text-2xl">🖼️</div>
+                <div>
+                  <p class="font-medium text-secondary-900">{{ content.title }}</p>
+                  <p class="text-sm text-secondary-500">{{ formatDate(content.start_date) }} - {{ formatDate(content.end_date) }}</p>
+                  <span :class="isContentActive(content) ? 'text-green-600 text-xs' : 'text-secondary-400 text-xs'">
+                    {{ isContentActive(content) ? '✅ Aktif Sekarang' : '⏳ Terjadwal' }}
+                  </span>
+                </div>
+              </div>
+              <div class="flex items-center gap-2">
+                <button @click="openContentModal(content)" class="p-2 text-primary-600 hover:bg-primary-50 rounded-lg">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
+                </button>
+                <button @click="deleteContent(content)" class="p-2 text-red-600 hover:bg-red-50 rounded-lg">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Login Content Modal -->
+    <div v-if="showContentModal" class="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div class="absolute inset-0 bg-black/50" @click="showContentModal = false"></div>
+      <div class="relative bg-white rounded-xl shadow-xl max-w-lg w-full max-h-[90vh] overflow-y-auto">
+        <div class="p-6 border-b border-secondary-200">
+          <h3 class="text-lg font-semibold text-secondary-900">{{ editingContent ? 'Edit Konten' : 'Tambah Konten' }}</h3>
+        </div>
+        <div class="p-6 space-y-4">
+          <div>
+            <label class="label">Judul <span class="text-red-500">*</span></label>
+            <input v-model="contentForm.title" type="text" class="input" placeholder="Selamat Natal 2025! 🎄" required />
+          </div>
+          <div>
+            <label class="label">Deskripsi</label>
+            <textarea v-model="contentForm.description" class="input" rows="3" placeholder="Pesan singkat..."></textarea>
+          </div>
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="label">Tanggal Mulai <span class="text-red-500">*</span></label>
+              <input v-model="contentForm.start_date" type="date" class="input" required />
+            </div>
+            <div>
+              <label class="label">Tanggal Selesai <span class="text-red-500">*</span></label>
+              <input v-model="contentForm.end_date" type="date" class="input" required />
+            </div>
+          </div>
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="label">Lebar Gambar (px)</label>
+              <input v-model.number="contentForm.image_width" type="number" class="input" min="200" max="800" />
+              <p class="text-xs text-secondary-400 mt-1">200-800px. Landscape: 600-800px</p>
+            </div>
+            <div>
+              <label class="label">Font Judul (px)</label>
+              <input v-model.number="contentForm.title_size" type="number" class="input" min="12" max="48" />
+            </div>
+          </div>
+          <div>
+            <label class="label">Gambar Ilustrasi</label>
+            <div v-if="editingContent?.image_url || previewImageUrl" class="mb-2">
+              <img :src="previewImageUrl || (apiBaseUrl + editingContent.image_url)" class="max-w-full max-h-48 object-contain rounded-lg bg-secondary-100" />
+            </div>
+            <input type="file" ref="imageInput" @change="handleImageSelect" accept="image/*" class="input" />
+            <p class="text-xs text-secondary-500 mt-1">PNG, JPG, WebP. Max 2MB. Landscape direkomendasikan.</p>
+          </div>
+        </div>
+        <div class="p-6 border-t border-secondary-200 flex justify-end gap-3">
+          <button @click="showContentModal = false" class="btn-secondary">Batal</button>
+          <button @click="saveContent" :disabled="savingContent" class="btn-primary">
+            {{ savingContent ? 'Menyimpan...' : 'Simpan' }}
+          </button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -445,6 +551,24 @@ const reportHeader = ref({
     nama: '',
     nip: ''
   }
+})
+
+// Login Content settings
+const loginContents = ref([])
+const showContentModal = ref(false)
+const editingContent = ref(null)
+const savingContent = ref(false)
+const previewImageUrl = ref(null)
+const selectedFile = ref(null)
+const imageInput = ref(null)
+const contentForm = ref({
+  title: '',
+  description: '',
+  start_date: '',
+  end_date: '',
+  image_width: 400,
+  title_size: 28,
+  desc_size: 16
 })
 
 // Helper to get full logo URL from relative path
@@ -517,6 +641,9 @@ onMounted(async () => {
   } catch (error) {
     console.log('No countdown settings found')
   }
+  
+  // Load login contents
+  await loadLoginContents()
   
   loading.value = false
   previewInterval = setInterval(updatePreview, 1000)
@@ -682,5 +809,124 @@ async function toggleLock(lock) {
   } finally {
     togglingLock.value = false
   }
+}
+
+// ========== LOGIN CONTENT FUNCTIONS ==========
+async function loadLoginContents() {
+  try {
+    const response = await api.get('/login-content')
+    if (response.data.success) {
+      loginContents.value = response.data.data || []
+    }
+  } catch (error) {
+    console.log('Failed to load login contents')
+  }
+}
+
+function openContentModal(content) {
+  // Reset preview
+  previewImageUrl.value = null
+  selectedFile.value = null
+  
+  if (content) {
+    editingContent.value = content
+    contentForm.value = {
+      title: content.title,
+      description: content.description || '',
+      start_date: content.start_date?.split('T')[0] || '',
+      end_date: content.end_date?.split('T')[0] || '',
+      image_width: content.image_width || 400,
+      title_size: content.title_size || 28,
+      desc_size: content.desc_size || 16
+    }
+  } else {
+    editingContent.value = null
+    contentForm.value = {
+      title: '',
+      description: '',
+      start_date: '',
+      end_date: '',
+      image_width: 400,
+      title_size: 28,
+      desc_size: 16
+    }
+  }
+  showContentModal.value = true
+}
+
+async function saveContent() {
+  if (!contentForm.value.title || !contentForm.value.start_date || !contentForm.value.end_date) {
+    notificationStore.error('Judul dan tanggal wajib diisi')
+    return
+  }
+  
+  savingContent.value = true
+  try {
+    let contentId
+    if (editingContent.value) {
+      await api.put(`/login-content/${editingContent.value.id}`, contentForm.value)
+      contentId = editingContent.value.id
+      notificationStore.success('Konten berhasil diupdate')
+    } else {
+      const response = await api.post('/login-content', contentForm.value)
+      contentId = response.data.data?.id
+      notificationStore.success('Konten berhasil ditambahkan')
+    }
+    
+    // Upload image if selected
+    if (selectedFile.value && contentId) {
+      const formData = new FormData()
+      formData.append('image', selectedFile.value)
+      await api.post(`/login-content/${contentId}/image`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      })
+    }
+    
+    showContentModal.value = false
+    previewImageUrl.value = null
+    selectedFile.value = null
+    await loadLoginContents()
+  } catch (error) {
+    notificationStore.error(error.response?.data?.message || 'Gagal menyimpan')
+  } finally {
+    savingContent.value = false
+  }
+}
+
+async function deleteContent(content) {
+  if (!confirm(`Hapus konten "${content.title}"?`)) return
+  
+  try {
+    await api.delete(`/login-content/${content.id}`)
+    notificationStore.success('Konten berhasil dihapus')
+    await loadLoginContents()
+  } catch (error) {
+    notificationStore.error('Gagal menghapus')
+  }
+}
+
+function handleImageSelect(event) {
+  const file = event.target.files[0]
+  if (!file) return
+  
+  if (file.size > 2 * 1024 * 1024) {
+    notificationStore.error('Ukuran file maksimal 2MB')
+    return
+  }
+  
+  selectedFile.value = file
+  previewImageUrl.value = URL.createObjectURL(file)
+}
+
+function isContentActive(content) {
+  const today = new Date().toISOString().split('T')[0]
+  const start = content.start_date?.split('T')[0]
+  const end = content.end_date?.split('T')[0]
+  return start <= today && today <= end && content.is_active
+}
+
+function formatDate(dateStr) {
+  if (!dateStr) return '-'
+  return new Date(dateStr).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })
 }
 </script>

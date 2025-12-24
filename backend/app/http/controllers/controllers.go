@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
@@ -643,6 +644,225 @@ func IsYearLocked(tahunAnggaran string) bool {
 	locked, ok := data["locked"].(bool)
 	return ok && locked
 }
+
+// ========== LOGIN CONTENT CONTROLLERS ==========
+
+// GetLoginContents - List all login contents
+func GetLoginContents(c *gin.Context) {
+	var contents []models.LoginContent
+	DB.Order("start_date DESC").Find(&contents)
+
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"data":    contents,
+	})
+}
+
+// CreateLoginContent - Create new login content
+func CreateLoginContent(c *gin.Context) {
+	var req struct {
+		Title       string `json:"title" binding:"required"`
+		Description string `json:"description"`
+		ImageWidth  int    `json:"image_width"`
+		TitleSize   int    `json:"title_size"`
+		DescSize    int    `json:"desc_size"`
+		StartDate   string `json:"start_date" binding:"required"`
+		EndDate     string `json:"end_date" binding:"required"`
+	}
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": "Data tidak valid"})
+		return
+	}
+
+	startDate, _ := time.Parse("2006-01-02", req.StartDate)
+	endDate, _ := time.Parse("2006-01-02", req.EndDate)
+
+	content := models.LoginContent{
+		Title:       req.Title,
+		Description: req.Description,
+		ImageWidth:  req.ImageWidth,
+		TitleSize:   req.TitleSize,
+		DescSize:    req.DescSize,
+		StartDate:   startDate,
+		EndDate:     endDate,
+		IsActive:    true,
+	}
+
+	// Set defaults
+	if content.ImageWidth <= 0 {
+		content.ImageWidth = 200
+	}
+	if content.TitleSize <= 0 {
+		content.TitleSize = 24
+	}
+	if content.DescSize <= 0 {
+		content.DescSize = 14
+	}
+
+	if err := DB.Create(&content).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": "Gagal menyimpan"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"message": "Konten berhasil ditambahkan",
+		"data":    content,
+	})
+}
+
+// UpdateLoginContent - Update login content
+func UpdateLoginContent(c *gin.Context) {
+	id := c.Param("id")
+	var content models.LoginContent
+	if err := DB.First(&content, id).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"success": false, "message": "Konten tidak ditemukan"})
+		return
+	}
+
+	var req struct {
+		Title       string `json:"title"`
+		Description string `json:"description"`
+		ImageURL    string `json:"image_url"`
+		ImageWidth  int    `json:"image_width"`
+		TitleSize   int    `json:"title_size"`
+		DescSize    int    `json:"desc_size"`
+		StartDate   string `json:"start_date"`
+		EndDate     string `json:"end_date"`
+		IsActive    *bool  `json:"is_active"`
+	}
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": "Data tidak valid"})
+		return
+	}
+
+	if req.Title != "" {
+		content.Title = req.Title
+	}
+	if req.Description != "" {
+		content.Description = req.Description
+	}
+	if req.ImageURL != "" {
+		content.ImageURL = req.ImageURL
+	}
+	if req.ImageWidth > 0 {
+		content.ImageWidth = req.ImageWidth
+	}
+	if req.TitleSize > 0 {
+		content.TitleSize = req.TitleSize
+	}
+	if req.DescSize > 0 {
+		content.DescSize = req.DescSize
+	}
+	if req.StartDate != "" {
+		startDate, _ := time.Parse("2006-01-02", req.StartDate)
+		content.StartDate = startDate
+	}
+	if req.EndDate != "" {
+		endDate, _ := time.Parse("2006-01-02", req.EndDate)
+		content.EndDate = endDate
+	}
+	if req.IsActive != nil {
+		content.IsActive = *req.IsActive
+	}
+
+	DB.Save(&content)
+
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"message": "Konten berhasil diupdate",
+		"data":    content,
+	})
+}
+
+// DeleteLoginContent - Delete login content
+func DeleteLoginContent(c *gin.Context) {
+	id := c.Param("id")
+	var content models.LoginContent
+	if err := DB.First(&content, id).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"success": false, "message": "Konten tidak ditemukan"})
+		return
+	}
+
+	// Delete image file if exists
+	if content.ImageURL != "" {
+		os.Remove("." + content.ImageURL)
+	}
+
+	DB.Delete(&content)
+
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"message": "Konten berhasil dihapus",
+	})
+}
+
+// GetActiveLoginContent - Public API, get content active today
+func GetActiveLoginContent(c *gin.Context) {
+	today := time.Now().Format("2006-01-02")
+
+	var content models.LoginContent
+	result := DB.Where("is_active = ? AND start_date <= ? AND end_date >= ?", true, today, today).
+		Order("start_date DESC").
+		First(&content)
+
+	if result.Error != nil {
+		// No active content, return null
+		c.JSON(http.StatusOK, gin.H{
+			"success": true,
+			"data":    nil,
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"data":    content,
+	})
+}
+
+// UploadLoginContentImage - Upload image for login content
+func UploadLoginContentImage(c *gin.Context) {
+	id := c.Param("id")
+	var content models.LoginContent
+	if err := DB.First(&content, id).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"success": false, "message": "Konten tidak ditemukan"})
+		return
+	}
+
+	file, err := c.FormFile("image")
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": "File tidak ditemukan"})
+		return
+	}
+
+	// Delete old image if exists
+	if content.ImageURL != "" {
+		os.Remove("." + content.ImageURL)
+	}
+
+	// Save new image
+	filename := fmt.Sprintf("login_content_%d_%d%s", content.ID, time.Now().Unix(), filepath.Ext(file.Filename))
+	savePath := filepath.Join("uploads", "login-content", filename)
+	os.MkdirAll(filepath.Dir(savePath), 0755)
+
+	if err := c.SaveUploadedFile(file, savePath); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": "Gagal menyimpan file"})
+		return
+	}
+
+	content.ImageURL = "/" + savePath
+	DB.Save(&content)
+
+	c.JSON(http.StatusOK, gin.H{
+		"success":   true,
+		"message":   "Gambar berhasil diupload",
+		"image_url": content.ImageURL,
+	})
+}
+
 
 // Upload Report Logo (logo instansi untuk kop surat)
 func UploadReportLogo(c *gin.Context) {
