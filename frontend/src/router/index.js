@@ -81,6 +81,19 @@ const routes = [
         name: 'EditPelimpahan',
         component: () => import('@/views/pelimpahan/Create.vue')
       },
+      // Setoran Pengembalian dari Unit (Bendahara & Super Admin)
+      {
+        path: 'setoran-pengembalian',
+        name: 'SetoranPengembalian',
+        component: () => import('@/views/setoran-pengembalian/Index.vue'),
+        meta: { roles: ['bendahara', 'super_admin'] }
+      },
+      {
+        path: 'setoran-pengembalian/create',
+        name: 'CreateSetoranPengembalian',
+        component: () => import('@/views/setoran-pengembalian/Create.vue'),
+        meta: { roles: ['bendahara', 'super_admin'] }
+      },
       // Laporan
       {
         path: 'laporan',
@@ -139,6 +152,19 @@ const routes = [
         name: 'PenarikanTunai',
         component: () => import('@/views/saldo-bendahara/PenarikanTunai.vue'),
         meta: { roles: ['bendahara', 'super_admin'] }
+      },
+      // Setor Kas BUD (Bendahara & Super Admin)
+      {
+        path: 'saldo-bendahara/setor-kas-bud',
+        name: 'SetorKasBUD',
+        component: () => import('@/views/saldo-bendahara/SetorKasBUD.vue'),
+        meta: { roles: ['bendahara', 'super_admin'] }
+      },
+      // Laporan Setor
+      {
+        path: 'laporan/setor-kas-bud',
+        name: 'LaporanSetorKasBUD',
+        component: () => import('@/views/laporan/SetorKasBUD.vue')
       },
       // Users (Super Admin only)
       {

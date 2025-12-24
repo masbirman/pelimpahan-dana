@@ -59,6 +59,19 @@
           <p class="text-sm text-secondary-500">Rekap saldo bendahara per bulan</p>
         </div>
       </router-link>
+
+      <!-- Laporan Setor Kas BUD -->
+      <router-link to="/laporan/setor-kas-bud" class="card hover:shadow-lg transition-shadow group">
+        <div class="card-body text-center py-8">
+          <div class="w-16 h-16 mx-auto mb-4 rounded-2xl bg-red-100 flex items-center justify-center group-hover:scale-110 transition-transform">
+            <svg class="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 14l6-6m-5.5.5h.01m4.99 5h.01M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16l3.5-2 3.5 2 3.5-2 3.5 2z" />
+            </svg>
+          </div>
+          <h3 class="text-lg font-semibold text-secondary-900 mb-2">Laporan Setor Kas BUD</h3>
+          <p class="text-sm text-secondary-500">Rekap pengembalian saldo ke Kas BUD</p>
+        </div>
+      </router-link>
     </div>
   </div>
 </template>

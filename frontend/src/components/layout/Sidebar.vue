@@ -219,6 +219,7 @@ const menuItems = [
   { path: '/', label: 'Dashboard', icon: DashboardIcon },
   { path: '/pelimpahan/create', label: 'Input Pelimpahan', icon: InputIcon },
   { path: '/pelimpahan', label: 'List Pelimpahan', icon: PelimpahanIcon },
+  { path: '/setoran-pengembalian', label: 'Setoran Pengembalian', icon: InputIcon, roles: ['bendahara', 'super_admin'] },
   { path: '/laporan', label: 'Laporan', icon: LaporanIcon },
   { path: '/units', label: 'Unit Kerja', icon: UnitIcon },
   { path: '/jenis-pelimpahan', label: 'Jenis Pelimpahan', icon: JenisIcon },

@@ -19,7 +19,7 @@
           </svg>
           Export Excel
         </button>
-        <router-link to="/pelimpahan/create" class="btn-primary">
+        <router-link v-if="!isYearLocked" to="/pelimpahan/create" class="btn-primary">
           <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
           </svg>
@@ -275,9 +275,11 @@
 import { ref, reactive, onMounted } from 'vue'
 import api from '@/services/api'
 import { useNotificationStore } from '@/stores/notification'
+import { useAuthStore } from '@/stores/auth'
 import { useDebounceFn } from '@vueuse/core'
 
 const notificationStore = useNotificationStore()
+const authStore = useAuthStore()
 
 const pelimpahanList = ref([])
 const jenisList = ref([])
@@ -286,6 +288,7 @@ const meta = ref({ page: 1, per_page: 10, total: 0, last_page: 1 })
 const filters = reactive({ search: '', jenis_pelimpahan_id: '', month: '', sumber_dana: '' })
 const showDeleteModal = ref(false)
 const selectedItem = ref(null)
+const isYearLocked = ref(false)
 
 // Pengembalian state
 const showPengembalianModal = ref(false)
@@ -300,9 +303,25 @@ const pengembalianForm = reactive({
 })
 
 onMounted(async () => {
+  await fetchLockStatus()
   await loadJenis()
   await loadData()
 })
+
+async function fetchLockStatus() {
+  if (authStore.user?.role === 'super_admin') {
+    isYearLocked.value = false
+    return
+  }
+  try {
+    const response = await api.get('/settings/lock-status')
+    if (response.data.success && response.data.data?.locked) {
+      isYearLocked.value = true
+    }
+  } catch (error) {
+    console.log('Lock check failed')
+  }
+}
 
 async function loadJenis() {
   try {

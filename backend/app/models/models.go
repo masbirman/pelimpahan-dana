@@ -151,3 +151,47 @@ type PengembalianDana struct {
 	PelimpahanDetail PelimpahanDetail `gorm:"foreignKey:PelimpahanDetailID" json:"pelimpahan_detail,omitempty"`
 	Creator          User             `gorm:"foreignKey:CreatedBy" json:"creator,omitempty"`
 }
+
+type SetorKasBUD struct {
+	ID            uint      `gorm:"primarykey" json:"id"`
+	TahunAnggaran int       `gorm:"not null;default:2025" json:"tahun_anggaran"`
+	Tanggal       time.Time `gorm:"type:date;not null" json:"tanggal"`
+	Jumlah        float64   `gorm:"type:decimal(15,2);not null" json:"jumlah"`
+	Keterangan    string    `gorm:"type:text;not null" json:"keterangan"`
+	CreatedBy     uint      `gorm:"not null" json:"created_by"`
+	CreatedAt     time.Time `json:"created_at"`
+	UpdatedAt     time.Time `json:"updated_at"`
+
+	// Relations
+	Creator User `gorm:"foreignKey:CreatedBy" json:"creator,omitempty"`
+}
+
+// SetoranPengembalian - Setoran pengembalian dari Unit ke Bendahara
+type SetoranPengembalian struct {
+	ID            uint      `gorm:"primarykey" json:"id"`
+	TahunAnggaran int       `gorm:"not null;default:2025" json:"tahun_anggaran"`
+	NomorSetoran  string    `gorm:"type:varchar(50);not null" json:"nomor_setoran"`
+	Tanggal       time.Time `gorm:"type:date;not null" json:"tanggal"`
+	Keterangan    string    `gorm:"type:text" json:"keterangan"`
+	CreatedBy     uint      `gorm:"not null" json:"created_by"`
+	CreatedAt     time.Time `json:"created_at"`
+	UpdatedAt     time.Time `json:"updated_at"`
+
+	// Relations
+	Details []SetoranPengembalianDetail `gorm:"foreignKey:SetoranPengembalianID" json:"details,omitempty"`
+	Creator User                        `gorm:"foreignKey:CreatedBy" json:"creator,omitempty"`
+}
+
+// SetoranPengembalianDetail - Detail per unit
+type SetoranPengembalianDetail struct {
+	ID                    uint    `gorm:"primarykey" json:"id"`
+	SetoranPengembalianID uint    `gorm:"not null" json:"setoran_pengembalian_id"`
+	UnitID                uint    `gorm:"not null" json:"unit_id"`
+	NamaPenerima          string  `gorm:"type:varchar(100);not null" json:"nama_penerima"`
+	NoRekening            string  `gorm:"type:varchar(50)" json:"no_rekening"`
+	Jumlah                float64 `gorm:"type:decimal(15,2);not null" json:"jumlah"`
+	SumberDana            string  `gorm:"type:varchar(10);not null;default:bank" json:"sumber_dana"` // bank atau tunai
+
+	// Relations
+	Unit Unit `gorm:"foreignKey:UnitID" json:"unit,omitempty"`
+}

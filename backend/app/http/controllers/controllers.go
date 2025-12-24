@@ -542,6 +542,108 @@ func SaveReportHeader(c *gin.Context) {
 	})
 }
 
+// Get Lock Status - Check if year is locked
+func GetLockStatus(c *gin.Context) {
+	tahunAnggaran := c.GetHeader("X-Tahun-Anggaran")
+	if tahunAnggaran == "" {
+		tahunAnggaran = "2025"
+	}
+
+	var setting models.Setting
+	key := "tahun_dikunci_" + tahunAnggaran
+	if err := DB.Where("key = ?", key).First(&setting).Error; err != nil {
+		c.JSON(http.StatusOK, gin.H{
+			"success": true,
+			"data": gin.H{
+				"locked":        false,
+				"tahun":         tahunAnggaran,
+				"locked_at":     nil,
+				"locked_reason": "",
+			},
+		})
+		return
+	}
+
+	var data map[string]interface{}
+	json.Unmarshal([]byte(setting.Value), &data)
+
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"data":    data,
+	})
+}
+
+// Toggle Lock - Lock/Unlock year (super_admin only)
+func ToggleLock(c *gin.Context) {
+	var req struct {
+		Locked bool   `json:"locked"`
+		Reason string `json:"reason"`
+	}
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": "Invalid request"})
+		return
+	}
+
+	tahunAnggaran := c.GetHeader("X-Tahun-Anggaran")
+	if tahunAnggaran == "" {
+		tahunAnggaran = "2025"
+	}
+
+	key := "tahun_dikunci_" + tahunAnggaran
+	data := map[string]interface{}{
+		"locked":        req.Locked,
+		"tahun":         tahunAnggaran,
+		"locked_at":     nil,
+		"locked_reason": req.Reason,
+	}
+	if req.Locked {
+		data["locked_at"] = time.Now().Format("2006-01-02 15:04:05")
+	}
+	jsonData, _ := json.Marshal(data)
+
+	var setting models.Setting
+	result := DB.Where("key = ?", key).First(&setting)
+	if result.Error != nil {
+		setting = models.Setting{
+			Key:   key,
+			Value: string(jsonData),
+		}
+		DB.Create(&setting)
+	} else {
+		setting.Value = string(jsonData)
+		DB.Save(&setting)
+	}
+
+	action := "dibuka"
+	if req.Locked {
+		action = "dikunci"
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"message": fmt.Sprintf("Tahun Anggaran %s berhasil %s", tahunAnggaran, action),
+		"data":    data,
+	})
+}
+
+// CheckYearLock - Returns true if year is locked (for use in other controllers)
+func IsYearLocked(tahunAnggaran string) bool {
+	var setting models.Setting
+	key := "tahun_dikunci_" + tahunAnggaran
+	if err := DB.Where("key = ?", key).First(&setting).Error; err != nil {
+		return false
+	}
+
+	var data map[string]interface{}
+	if err := json.Unmarshal([]byte(setting.Value), &data); err != nil {
+		return false
+	}
+
+	locked, ok := data["locked"].(bool)
+	return ok && locked
+}
+
 // Upload Report Logo (logo instansi untuk kop surat)
 func UploadReportLogo(c *gin.Context) {
 	file, err := c.FormFile("logo")
@@ -1152,6 +1254,21 @@ func GetPelimpahan(c *gin.Context) {
 }
 
 func CreatePelimpahan(c *gin.Context) {
+	// Check if year is locked (skip for super_admin)
+	role := c.GetString("user_role")
+	tahunAnggaran := c.GetHeader("X-Tahun-Anggaran")
+	if tahunAnggaran == "" {
+		tahunAnggaran = "2025"
+	}
+	if role != "super_admin" && IsYearLocked(tahunAnggaran) {
+		c.JSON(http.StatusForbidden, gin.H{
+			"success": false,
+			"message": "Tahun anggaran sudah dikunci. Hubungi administrator.",
+			"locked":  true,
+		})
+		return
+	}
+
 	var req struct {
 		TanggalPelimpahan string `json:"tanggal_pelimpahan"`
 		UraianPelimpahan  string `json:"uraian_pelimpahan"`
@@ -1561,13 +1678,39 @@ func GetLatestSaldo(c *gin.Context) {
 		Select("COALESCE(SUM(jumlah), 0)").Scan(&totalPengembalianTunai)
 	saldoTunai += totalPengembalianTunai
 
+	// Add setoran pengembalian dari unit (returns to main treasurer)
+	var totalSetoranPengembalianBank float64
+	DB.Model(&models.SetoranPengembalianDetail{}).
+		Joins("JOIN setoran_pengembalians ON setoran_pengembalians.id = setoran_pengembalian_details.setoran_pengembalian_id").
+		Where("setoran_pengembalians.tahun_anggaran = ?", tahunAnggaran).
+		Where("setoran_pengembalian_details.sumber_dana = ?", "bank").
+		Select("COALESCE(SUM(setoran_pengembalian_details.jumlah), 0)").Scan(&totalSetoranPengembalianBank)
+	saldoBank += totalSetoranPengembalianBank
+
+	var totalSetoranPengembalianTunai float64
+	DB.Model(&models.SetoranPengembalianDetail{}).
+		Joins("JOIN setoran_pengembalians ON setoran_pengembalians.id = setoran_pengembalian_details.setoran_pengembalian_id").
+		Where("setoran_pengembalians.tahun_anggaran = ?", tahunAnggaran).
+		Where("setoran_pengembalian_details.sumber_dana = ?", "tunai").
+		Select("COALESCE(SUM(setoran_pengembalian_details.jumlah), 0)").Scan(&totalSetoranPengembalianTunai)
+	saldoTunai += totalSetoranPengembalianTunai
+
+	// Subtract setor kas BUD (returns to state treasury)
+	var totalSetorKasBUD float64
+	DB.Model(&models.SetorKasBUD{}).
+		Where("tahun_anggaran = ?", tahunAnggaran).
+		Select("COALESCE(SUM(jumlah), 0)").Scan(&totalSetorKasBUD)
+	saldoBank -= totalSetorKasBUD
+
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"data": gin.H{
-			"saldo_bank":  saldoBank,
-			"saldo_tunai": saldoTunai,
-			"total_saldo": saldoBank + saldoTunai,
-			"tanggal":     latestSaldo.Tanggal,
+			"saldo_bank":                saldoBank,
+			"saldo_tunai":               saldoTunai,
+			"total_saldo":               saldoBank + saldoTunai,
+			"tanggal":                   latestSaldo.Tanggal,
+			"total_setor_bud":           totalSetorKasBUD,
+			"total_setoran_pengembalian": totalSetoranPengembalianBank + totalSetoranPengembalianTunai,
 		},
 	})
 }
@@ -1949,6 +2092,21 @@ func GetTopUpSaldoByID(c *gin.Context) {
 }
 
 func CreateTopUpSaldo(c *gin.Context) {
+	// Check if year is locked (skip for super_admin)
+	role := c.GetString("user_role")
+	tahunAnggaran := c.GetHeader("X-Tahun-Anggaran")
+	if tahunAnggaran == "" {
+		tahunAnggaran = "2025"
+	}
+	if role != "super_admin" && IsYearLocked(tahunAnggaran) {
+		c.JSON(http.StatusForbidden, gin.H{
+			"success": false,
+			"message": "Tahun anggaran sudah dikunci. Hubungi administrator.",
+			"locked":  true,
+		})
+		return
+	}
+
 	var req struct {
 		Tanggal    string  `json:"tanggal" binding:"required"`
 		Jumlah     float64 `json:"jumlah" binding:"required,gt=0"`
@@ -2085,6 +2243,21 @@ func GetPenarikanTunaiByID(c *gin.Context) {
 }
 
 func CreatePenarikanTunai(c *gin.Context) {
+	// Check if year is locked (skip for super_admin)
+	role := c.GetString("user_role")
+	tahunAnggaran := c.GetHeader("X-Tahun-Anggaran")
+	if tahunAnggaran == "" {
+		tahunAnggaran = "2025"
+	}
+	if role != "super_admin" && IsYearLocked(tahunAnggaran) {
+		c.JSON(http.StatusForbidden, gin.H{
+			"success": false,
+			"message": "Tahun anggaran sudah dikunci. Hubungi administrator.",
+			"locked":  true,
+		})
+		return
+	}
+
 	var req struct {
 		Tanggal    string  `json:"tanggal" binding:"required"`
 		Jumlah     float64 `json:"jumlah" binding:"required,gt=0"`
@@ -2355,4 +2528,276 @@ func DeletePengembalianDana(c *gin.Context) {
 
 func formatCurrency(value float64) string {
 	return fmt.Sprintf("%.0f", value)
+}
+
+// =============================================
+// SETOR KAS BUD CONTROLLERS
+// =============================================
+
+func GetSetorKasBUD(c *gin.Context) {
+	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
+	perPage, _ := strconv.Atoi(c.DefaultQuery("per_page", "10"))
+	sortBy := c.DefaultQuery("sort_by", "tanggal")
+	sortOrder := c.DefaultQuery("sort_order", "desc")
+
+	tahunAnggaran := c.GetHeader("X-Tahun-Anggaran")
+	if tahunAnggaran == "" {
+		tahunAnggaran = "2025"
+	}
+
+	var setorList []models.SetorKasBUD
+	var total int64
+
+	query := DB.Model(&models.SetorKasBUD{}).Preload("Creator").
+		Where("tahun_anggaran = ?", tahunAnggaran)
+
+	query.Count(&total)
+
+	offset := (page - 1) * perPage
+	query.Order(sortBy + " " + sortOrder).Limit(perPage).Offset(offset).Find(&setorList)
+
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"data":    setorList,
+		"meta": gin.H{
+			"total":     total,
+			"page":      page,
+			"per_page":  perPage,
+			"last_page": (int(total) + perPage - 1) / perPage,
+		},
+	})
+}
+
+func GetSetorKasBUDByID(c *gin.Context) {
+	var setor models.SetorKasBUD
+	if err := DB.Preload("Creator").First(&setor, c.Param("id")).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"success": false, "message": "Data tidak ditemukan"})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"success": true, "data": setor})
+}
+
+func CreateSetorKasBUD(c *gin.Context) {
+	// Check if year is locked (skip for super_admin)
+	role := c.GetString("user_role")
+	tahunAnggaran := c.GetHeader("X-Tahun-Anggaran")
+	if tahunAnggaran == "" {
+		tahunAnggaran = "2025"
+	}
+	if role != "super_admin" && IsYearLocked(tahunAnggaran) {
+		c.JSON(http.StatusForbidden, gin.H{
+			"success": false,
+			"message": "Tahun anggaran sudah dikunci. Hubungi administrator.",
+			"locked":  true,
+		})
+		return
+	}
+
+	var req struct {
+		Tanggal    string  `json:"tanggal" binding:"required"`
+		Jumlah     float64 `json:"jumlah" binding:"required,gt=0"`
+		Keterangan string  `json:"keterangan" binding:"required,min=3"`
+	}
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": "Data tidak valid"})
+		return
+	}
+
+	tanggal, _ := time.Parse("2006-01-02", req.Tanggal)
+
+	// tahunAnggaran already defined in lock check above
+	tahunInt, _ := strconv.Atoi(tahunAnggaran)
+
+	setor := models.SetorKasBUD{
+		TahunAnggaran: tahunInt,
+		Tanggal:       tanggal,
+		Jumlah:        req.Jumlah,
+		Keterangan:    req.Keterangan,
+		CreatedBy:     c.GetUint("user_id"),
+	}
+
+	if err := DB.Create(&setor).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": "Gagal menyimpan data"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"message": "Setor ke Kas BUD berhasil dicatat",
+		"data":    setor,
+	})
+}
+
+func DeleteSetorKasBUD(c *gin.Context) {
+	if err := DB.Delete(&models.SetorKasBUD{}, c.Param("id")).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": "Gagal menghapus data"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"success": true, "message": "Setor Kas BUD berhasil dihapus"})
+}
+
+// =============================================
+// SETORAN PENGEMBALIAN DARI UNIT CONTROLLERS
+// =============================================
+
+func GetSetoranPengembalian(c *gin.Context) {
+	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
+	perPage, _ := strconv.Atoi(c.DefaultQuery("per_page", "10"))
+	sortBy := c.DefaultQuery("sort_by", "tanggal")
+	sortOrder := c.DefaultQuery("sort_order", "desc")
+
+	tahunAnggaran := c.GetHeader("X-Tahun-Anggaran")
+	if tahunAnggaran == "" {
+		tahunAnggaran = "2025"
+	}
+
+	var setoranList []models.SetoranPengembalian
+	var total int64
+
+	query := DB.Model(&models.SetoranPengembalian{}).
+		Preload("Details.Unit").
+		Preload("Creator").
+		Where("tahun_anggaran = ?", tahunAnggaran)
+
+	query.Count(&total)
+
+	offset := (page - 1) * perPage
+	query.Order(sortBy + " " + sortOrder).Limit(perPage).Offset(offset).Find(&setoranList)
+
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"data":    setoranList,
+		"meta": gin.H{
+			"total":     total,
+			"page":      page,
+			"per_page":  perPage,
+			"last_page": (int(total) + perPage - 1) / perPage,
+		},
+	})
+}
+
+func GetSetoranPengembalianByID(c *gin.Context) {
+	var setoran models.SetoranPengembalian
+	if err := DB.Preload("Details.Unit").Preload("Creator").First(&setoran, c.Param("id")).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"success": false, "message": "Data tidak ditemukan"})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"success": true, "data": setoran})
+}
+
+func CreateSetoranPengembalian(c *gin.Context) {
+	// Check if year is locked (skip for super_admin)
+	role := c.GetString("user_role")
+	tahunAnggaran := c.GetHeader("X-Tahun-Anggaran")
+	if tahunAnggaran == "" {
+		tahunAnggaran = "2025"
+	}
+	if role != "super_admin" && IsYearLocked(tahunAnggaran) {
+		c.JSON(http.StatusForbidden, gin.H{
+			"success": false,
+			"message": "Tahun anggaran sudah dikunci. Hubungi administrator.",
+			"locked":  true,
+		})
+		return
+	}
+
+	var req struct {
+		Tanggal    string `json:"tanggal" binding:"required"`
+		Keterangan string `json:"keterangan"`
+		Details    []struct {
+			UnitID       uint    `json:"unit_id" binding:"required"`
+			NamaPenerima string  `json:"nama_penerima" binding:"required"`
+			NoRekening   string  `json:"no_rekening"`
+			Jumlah       float64 `json:"jumlah" binding:"required,gt=0"`
+			SumberDana   string  `json:"sumber_dana" binding:"required"` // bank or tunai
+		} `json:"details" binding:"required,min=1"`
+	}
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": "Data tidak valid: " + err.Error()})
+		return
+	}
+
+	tanggal, _ := time.Parse("2006-01-02", req.Tanggal)
+
+	// tahunAnggaran already defined in lock check above
+	tahunInt, _ := strconv.Atoi(tahunAnggaran)
+
+	// Generate nomor setoran
+	var count int64
+	DB.Model(&models.SetoranPengembalian{}).Where("tahun_anggaran = ?", tahunInt).Count(&count)
+	nomorSetoran := fmt.Sprintf("SP-%d-%04d", tahunInt, count+1)
+
+	// Create setoran
+	setoran := models.SetoranPengembalian{
+		TahunAnggaran: tahunInt,
+		NomorSetoran:  nomorSetoran,
+		Tanggal:       tanggal,
+		Keterangan:    req.Keterangan,
+		CreatedBy:     c.GetUint("user_id"),
+	}
+
+	tx := DB.Begin()
+
+	if err := tx.Create(&setoran).Error; err != nil {
+		tx.Rollback()
+		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": "Gagal menyimpan data"})
+		return
+	}
+
+	// Create details
+	for _, d := range req.Details {
+		sumberDana := d.SumberDana
+		if sumberDana != "bank" && sumberDana != "tunai" {
+			sumberDana = "bank"
+		}
+
+		detail := models.SetoranPengembalianDetail{
+			SetoranPengembalianID: setoran.ID,
+			UnitID:                d.UnitID,
+			NamaPenerima:          d.NamaPenerima,
+			NoRekening:            d.NoRekening,
+			Jumlah:                d.Jumlah,
+			SumberDana:            sumberDana,
+		}
+		if err := tx.Create(&detail).Error; err != nil {
+			tx.Rollback()
+			c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": "Gagal menyimpan detail"})
+			return
+		}
+	}
+
+	tx.Commit()
+
+	// Reload with relations
+	DB.Preload("Details.Unit").Preload("Creator").First(&setoran, setoran.ID)
+
+	c.JSON(http.StatusCreated, gin.H{
+		"success": true,
+		"message": "Setoran pengembalian berhasil dicatat",
+		"data":    setoran,
+	})
+}
+
+func DeleteSetoranPengembalian(c *gin.Context) {
+	tx := DB.Begin()
+
+	// Delete details first
+	if err := tx.Where("setoran_pengembalian_id = ?", c.Param("id")).Delete(&models.SetoranPengembalianDetail{}).Error; err != nil {
+		tx.Rollback()
+		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": "Gagal menghapus detail"})
+		return
+	}
+
+	// Delete main record
+	if err := tx.Delete(&models.SetoranPengembalian{}, c.Param("id")).Error; err != nil {
+		tx.Rollback()
+		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": "Gagal menghapus data"})
+		return
+	}
+
+	tx.Commit()
+	c.JSON(http.StatusOK, gin.H{"success": true, "message": "Setoran pengembalian berhasil dihapus"})
 }

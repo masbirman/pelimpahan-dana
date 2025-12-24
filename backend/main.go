@@ -43,6 +43,9 @@ func main() {
 		&models.SaldoBendahara{},
 		&models.TopUpSaldo{},
 		&models.PenarikanTunai{},
+		&models.SetorKasBUD{},
+		&models.SetoranPengembalian{},
+		&models.SetoranPengembalianDetail{},
 	)
 
 	// Seed database
@@ -89,6 +92,8 @@ func main() {
 			protected.GET("/settings/report-header", controllers.GetReportHeader)
 			protected.PUT("/settings/report-header", controllers.SaveReportHeader)
 			protected.POST("/settings/report-logo", controllers.UploadReportLogo)
+			protected.GET("/settings/lock-status", controllers.GetLockStatus)
+			protected.POST("/settings/toggle-lock", middleware.Role("super_admin"), controllers.ToggleLock)
 
 			// Units - specific routes BEFORE wildcard :id
 			protected.GET("/units", controllers.GetUnits)
@@ -170,6 +175,30 @@ func main() {
 
 			// Delete pengembalian dana (super_admin only)
 			protected.DELETE("/pengembalian-dana/:id", middleware.Role("super_admin"), controllers.DeletePengembalianDana)
+
+			// Setor Kas BUD (bendahara & super_admin)
+			setorKasBUD := protected.Group("")
+			setorKasBUD.Use(middleware.Role("bendahara", "super_admin"))
+			{
+				setorKasBUD.GET("/setor-kas-bud", controllers.GetSetorKasBUD)
+				setorKasBUD.GET("/setor-kas-bud/:id", controllers.GetSetorKasBUDByID)
+				setorKasBUD.POST("/setor-kas-bud", controllers.CreateSetorKasBUD)
+			}
+
+			// Delete setor kas BUD (super_admin only)
+			protected.DELETE("/setor-kas-bud/:id", middleware.Role("super_admin"), controllers.DeleteSetorKasBUD)
+
+			// Setoran Pengembalian dari Unit (bendahara & super_admin)
+			setoranPengembalian := protected.Group("")
+			setoranPengembalian.Use(middleware.Role("bendahara", "super_admin"))
+			{
+				setoranPengembalian.GET("/setoran-pengembalian", controllers.GetSetoranPengembalian)
+				setoranPengembalian.GET("/setoran-pengembalian/:id", controllers.GetSetoranPengembalianByID)
+				setoranPengembalian.POST("/setoran-pengembalian", controllers.CreateSetoranPengembalian)
+			}
+
+			// Delete setoran pengembalian (super_admin only)
+			protected.DELETE("/setoran-pengembalian/:id", middleware.Role("super_admin"), controllers.DeleteSetoranPengembalian)
 
 			// Users (admin only)
 			admin := protected.Group("")

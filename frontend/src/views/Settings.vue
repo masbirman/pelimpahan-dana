@@ -26,6 +26,12 @@
         >
           Pengaturan Laporan
         </button>
+        <button 
+          @click="activeTab = 'lock'" 
+          :class="['pb-3 px-1 text-sm font-medium border-b-2 transition-colors', activeTab === 'lock' ? 'border-red-600 text-red-600' : 'border-transparent text-secondary-500 hover:text-secondary-700']"
+        >
+          🔒 Kunci Tahun
+        </button>
       </nav>
     </div>
 
@@ -323,6 +329,60 @@
         </button>
       </div>
     </div>
+
+    <!-- Lock Year Tab -->
+    <div v-if="activeTab === 'lock'" class="card">
+      <div class="card-header bg-red-50">
+        <h3 class="font-semibold text-red-900">🔒 Kunci Tahun Anggaran</h3>
+      </div>
+      <div class="card-body space-y-6">
+        <div v-if="lockStatus.locked" class="p-4 bg-red-100 border border-red-300 rounded-xl">
+          <div class="flex items-center gap-3">
+            <span class="text-2xl">🔒</span>
+            <div>
+              <p class="font-bold text-red-800">Tahun Anggaran {{ lockStatus.tahun }} DIKUNCI</p>
+              <p class="text-sm text-red-700">Dikunci pada: {{ lockStatus.locked_at || '-' }}</p>
+              <p v-if="lockStatus.locked_reason" class="text-sm text-red-600 mt-1">Alasan: {{ lockStatus.locked_reason }}</p>
+            </div>
+          </div>
+        </div>
+        <div v-else class="p-4 bg-green-100 border border-green-300 rounded-xl">
+          <div class="flex items-center gap-3">
+            <span class="text-2xl">🔓</span>
+            <div>
+              <p class="font-bold text-green-800">Tahun Anggaran {{ lockStatus.tahun }} AKTIF</p>
+              <p class="text-sm text-green-700">User dapat melakukan input pelimpahan dan transaksi lainnya.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="p-4 bg-secondary-50 rounded-xl space-y-4">
+          <p class="text-sm text-secondary-600">
+            <strong>Perhatian:</strong> Mengunci tahun anggaran akan mencegah semua user (kecuali Super Admin) untuk:
+          </p>
+          <ul class="list-disc list-inside text-sm text-secondary-600 space-y-1">
+            <li>Input Pelimpahan baru</li>
+            <li>Input Setoran Pengembalian</li>
+            <li>Top Up Bank / Penarikan Tunai</li>
+            <li>Setor ke Kas BUD</li>
+          </ul>
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-secondary-700 mb-1">Alasan (opsional)</label>
+          <input v-model="lockReason" type="text" class="input" placeholder="Contoh: Tutup Buku Tahun 2025" />
+        </div>
+
+        <div class="flex justify-end gap-3 pt-4 border-t border-secondary-200">
+          <button v-if="lockStatus.locked" @click="toggleLock(false)" :disabled="togglingLock" class="btn-primary bg-green-600 hover:bg-green-700">
+            {{ togglingLock ? 'Memproses...' : '🔓 Buka Kunci Tahun' }}
+          </button>
+          <button v-else @click="toggleLock(true)" :disabled="togglingLock" class="btn-danger">
+            {{ togglingLock ? 'Memproses...' : '🔒 Kunci Tahun Anggaran' }}
+          </button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -343,6 +403,16 @@ const branding = ref({
   app_subtitle: '',
   logo_url: ''
 })
+
+// Lock Year settings
+const lockStatus = ref({
+  locked: false,
+  tahun: '2025',
+  locked_at: null,
+  locked_reason: ''
+})
+const lockReason = ref('')
+const togglingLock = ref(false)
 
 // Countdown settings
 const savingCountdown = ref(false)
@@ -580,5 +650,37 @@ async function saveReportHeader() {
 // Load report header on mount
 onMounted(async () => {
   await loadReportHeader()
+  await loadLockStatus()
 })
+
+// Lock Status Functions
+async function loadLockStatus() {
+  try {
+    const response = await api.get('/settings/lock-status')
+    if (response.data.success && response.data.data) {
+      lockStatus.value = response.data.data
+    }
+  } catch (error) {
+    console.log('No lock status found')
+  }
+}
+
+async function toggleLock(lock) {
+  togglingLock.value = true
+  try {
+    const response = await api.post('/settings/toggle-lock', {
+      locked: lock,
+      reason: lockReason.value
+    })
+    if (response.data.success) {
+      lockStatus.value = response.data.data
+      notificationStore.success(response.data.message)
+      lockReason.value = ''
+    }
+  } catch (error) {
+    notificationStore.error(error.response?.data?.message || 'Gagal mengubah status kunci')
+  } finally {
+    togglingLock.value = false
+  }
+}
 </script>
